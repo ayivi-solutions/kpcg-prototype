@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kpcg-prototype",
+  "compatibility_date": "2026-09-11",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application",
+    "html_handling": "none"
+  },
+  "routes": [
+    {
+      "pattern": "kpcg.ayivisolutions.com",
+      "custom_domain": true
+    }
+  ]
+}
