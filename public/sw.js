@@ -1,4 +1,4 @@
-const RELEASE='kpcg-v16.1-20260912';
+const RELEASE='kpcg-v16.2-20260912';
 const CACHE=`kpcg-${RELEASE}`;
 const APP_SHELL=[
   '/',
@@ -18,7 +18,21 @@ const APP_SHELL=[
   '/app/patch-v15-04.txt?v=15',
   '/app/patch-v16-01.txt?v=16',
   '/app/patch-v16-02.txt?v=16',
-  '/assets/kpcg-logo.webp'
+  '/app/patch-v16-2-real-imagery.txt?v=162',
+  '/assets/kpcg-logo.webp',
+  '/assets/real/featured-community-tree-action.jpg',
+  '/assets/real/county-dialogue-community.jpg',
+  '/assets/real/community-tree-planting.jpg',
+  '/assets/real/media-interview-kpcg-01.jpg',
+  '/assets/real/ccde-action-plan.jpg',
+  '/assets/real/community-consultation.jpg',
+  '/assets/real/tree-planting-community.jpg',
+  '/assets/real/media-interview-kpcg-02.jpg',
+  '/assets/real/climate-finance-tracking.jpg',
+  '/assets/real/stakeholder-workshop.jpg',
+  '/assets/real/school-seedlings.jpg',
+  '/assets/real/media-interview-tv.jpg',
+  '/assets/real/indigenous-climate-study.jpg'
 ];
 
 self.addEventListener('install',event=>{
