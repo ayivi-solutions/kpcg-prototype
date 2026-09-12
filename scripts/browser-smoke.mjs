@@ -15,28 +15,28 @@ const outputPath=path.join(artifactDir,productionMode?'production-smoke-summary.
 const releaseCritical=/\/(?:app\/|assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$))/;
 const assetQualityFloorBytes=40000;
 const expectedAssets={
-  '/assets/featured-locally-led-action.webp':'8f145f0bbd12e6ea704cbda20f985b5baf472eb6080d9a7fd8dc674e93ade2a3',
   '/assets/leader-governance.webp':'03545aa2952c229c29ca6f05b7a4a6146af4e4b53948d842233f9af1c908b170',
   '/assets/leader-programme.webp':'5563d21ea2b16c83368b8cc94581a7167c7523ce1f495af4f82dc8900e2a3e25',
   '/assets/leader-secretariat.webp':'87fc297f3ee3ccd9d6bbb2d1ac8cfaa743fc2d4e540ce0721d481b180afc0306',
-  '/assets/media-01-county-dialogue.webp':'49beaca189cc3b07d9deca572d77b3dc1f41d91d630b178faeb2711469c5e4e0',
-  '/assets/media-02-community-adaptation.webp':'2a4d45b8b8bc13e87afe69577d7c6adc1854983ebbb71768376e8c01fd16d4bc',
-  '/assets/media-03-governance-interview.webp':'b9e6f6e3026deff096718cac6b18ce6431e15081facfad61fff40ed8f7ced2b2',
-  '/assets/media-04-evidence-cover.webp':'3f3ec874832c5343a279103faea221d7e51b2ba6e05510c2486b615f687b23f5',
-  '/assets/media-05-county-dialogue.webp':'dc14b3dc9ee8109c3eaf5d104dd80df3c08c84878d9f351daa28edaeacedb028',
-  '/assets/media-06-community-adaptation.webp':'e6be1ca1dcf5172e20b7a9dbe97c5462ad0305a905dbb1ac7af9f3d8bf3cc541',
-  '/assets/media-07-governance-interview.webp':'167c7660719de9d81fd258a3e78ad64d44cdfdd430d53fa517f3ca901bfed1d6',
-  '/assets/media-08-evidence-cover.webp':'49f49217da20c8466d3ee4aa9f7c1c8ff5db8d09acf38536840b933f0bc32f58',
-  '/assets/media-09-county-dialogue.webp':'1fd97c430fc26708cf9d0a89aa0d5f0a06e4a7f39039e37c57a76c999fd920b1',
-  '/assets/media-10-community-adaptation.webp':'2940c76123a0565124039b32c22af10d15655202edcaf83543b9129d0f6455a4',
-  '/assets/media-11-governance-interview.webp':'0ca6bf260cead485b9f254bdb1d0b0f35b3bd008018e28751b7fbab10a7f9388',
-  '/assets/media-12-evidence-cover.webp':'3d72852d37d6b2a474924dc892739a6aff5576b34b9196934888f0218696e28e'
+  '/assets/real/featured-community-tree-action.jpg':'1cef51ee7cf36c4e8b06c85c79b55d54b9fe9c7b62369148cab6dfbfc38ffb4a',
+  '/assets/real/county-dialogue-community.jpg':'7350285813dcc19829fe2a857842a6c969e4923bd79824fe688b616fa0ddadbd',
+  '/assets/real/community-tree-planting.jpg':'3b79f06e15e9ad4752981b72d964b754cc00013179d048d0e6ce9cbe0e9a13fc',
+  '/assets/real/media-interview-kpcg-01.jpg':'2bad040b08d3ea4d4c7fb1c5ba4edee95433d90501eba1e0d07790bccb69c6d5',
+  '/assets/real/ccde-action-plan.jpg':'b822fc84aa933cd7890ffe2c5e708aa2ae8be1f3293456948f844375eaaafecd',
+  '/assets/real/community-consultation.jpg':'3ae7168c6e6909cc884144cd43f3403fd2fb862a86c931cf7b30da763388d44e',
+  '/assets/real/tree-planting-community.jpg':'ac5694c3033d3eb38249e11a85252a5960263804f82e37f60fc13d7fdc4effe3',
+  '/assets/real/media-interview-kpcg-02.jpg':'fb94f8dd06b5614b46b1af13ba80cbb68f513c791431abdaa067f573b92eb073',
+  '/assets/real/climate-finance-tracking.jpg':'4030cfd6f1e84cd63cd9712411e58e193b8a1977629d0267b580efebcf2b827c',
+  '/assets/real/stakeholder-workshop.jpg':'6dfda1a6c460292cdc686af5c5a73ded19ee83a6768fda51c158f921a39f27b8',
+  '/assets/real/school-seedlings.jpg':'e3a800cc0d80c8961e48b0131bee42a43d4d9cf3bb52a41c92ee4006029501cf',
+  '/assets/real/media-interview-tv.jpg':'86536a979525034e5bbe5ee4ed05c745a0d8f569e994bb0ed173d0074c59a835',
+  '/assets/real/indigenous-climate-study.jpg':'6a82c36a0c0589906c0b6a0018f540b402b9f9b96934f40f965aa6a52591c4b1'
 };
 const representativeImages=[
-  '/assets/featured-locally-led-action.webp',
+  '/assets/real/featured-community-tree-action.jpg',
   '/assets/leader-governance.webp',
-  '/assets/media-01-county-dialogue.webp',
-  '/assets/media-04-evidence-cover.webp'
+  '/assets/real/county-dialogue-community.jpg',
+  '/assets/real/ccde-action-plan.jpg'
 ];
 const profiles=[
   {name:'desktop',viewport:{width:1440,height:900},isMobile:false},
@@ -53,17 +53,17 @@ const verifyReleaseBytes=async context=>{
   const rootResponse=await context.request.get(`${baseURL}/`);
   if(rootResponse.status()!==200)throw new Error(`release bytes: root returned ${rootResponse.status()}`);
   const loader=await rootResponse.text();
-  for(const marker of ['KPCGApplyExperiencePatchV16','patch-v16-02.txt?v=16','FETCH_TIMEOUT_MS']){
+  for(const marker of ['KPCGApplyExperiencePatchV16','KPCGApplyRealImageryV162','patch-v16-2-real-imagery.txt?v=162','FETCH_TIMEOUT_MS']){
     if(!loader.includes(marker))throw new Error(`release bytes: loader missing ${marker}`);
   }
 
   const swResponse=await context.request.get(`${baseURL}/sw.js?qa=${Date.now()}`);
   if(swResponse.status()!==200)throw new Error(`release bytes: sw.js returned ${swResponse.status()}`);
   const swText=await swResponse.text();
-  if(!swText.includes('kpcg-v16.1-20260912'))throw new Error('release bytes: live service worker is not v16.1-20260912');
+  if(!swText.includes('kpcg-v16.2-20260912'))throw new Error('release bytes: live service worker is not v16.2-20260912');
 
   const fragments=[];
-  for(const fragment of ['/app/patch-v16-01.txt?v=16','/app/patch-v16-02.txt?v=16']){
+  for(const fragment of ['/app/patch-v16-01.txt?v=16','/app/patch-v16-02.txt?v=16','/app/patch-v16-2-real-imagery.txt?v=162']){
     const response=await context.request.get(`${baseURL}${fragment}`);
     const body=await response.body();
     if(response.status()!==200||body.length===0)throw new Error(`release bytes: ${fragment} is unavailable`);
@@ -80,7 +80,7 @@ const verifyReleaseBytes=async context=>{
     if(!passed)throw new Error(`release bytes: ${assetPath} failed size/checksum validation (${response.status()}, ${body.length} bytes, ${sha256})`);
   }
 
-  return {rootStatus:rootResponse.status(),loaderMarkersValid:true,serviceWorkerRelease:'kpcg-v16.1-20260912',v16Fragments:fragments,assets};
+  return {rootStatus:rootResponse.status(),loaderMarkersValid:true,serviceWorkerRelease:'kpcg-v16.2-20260912',v16Fragments:fragments,assets};
 };
 
 fs.mkdirSync(artifactDir,{recursive:true});
@@ -116,7 +116,7 @@ try{
       const text=(document.body?.innerText||'').trim();
       const nav=document.querySelector('nav,[role="navigation"]');
       const main=document.querySelector('main,#app,#root,[data-page],[class*="shell"],[class*="page"]');
-      const v16Markers=['featured-locally-led-action.webp','leader-governance.webp','media-01-county-dialogue.webp','media-04-evidence-cover.webp'];
+      const v16Markers=['featured-community-tree-action.jpg','leader-governance.webp','county-dialogue-community.jpg','ccde-action-plan.jpg'];
       return {
         bodyTextLength:text.length,
         hasIdentity:/KPCG|Kenya Platform for Climate Governance/i.test(`${text}\n${html}`),
@@ -132,7 +132,7 @@ try{
     if(!domChecks.hasIdentity)throw new Error(`${profile.name}: KPCG identity missing after loader reconstruction`);
     if(!domChecks.hasPrimaryNavigation||domChecks.navigationItems<2)throw new Error(`${profile.name}: primary navigation did not render`);
     if(!domChecks.hasMainShell)throw new Error(`${profile.name}: main content shell missing`);
-    if(!domChecks.hasV16Marker)throw new Error(`${profile.name}: v16 identifying asset markers missing`);
+    if(!domChecks.hasV16Marker)throw new Error(`${profile.name}: v16.2 identifying asset markers missing`);
 
     const manifestResponse=await context.request.get(`${baseURL}/manifest.webmanifest`);
     if(manifestResponse.status()!==200)throw new Error(`${profile.name}: manifest returned ${manifestResponse.status()}`);
@@ -161,7 +161,7 @@ try{
       image.onerror=()=>resolve({path,naturalWidth:0,naturalHeight:0,loaded:false});
       image.src=`${path}?qa=${Date.now()}`;
     }))),representativeImages);
-    if(imageResults.some(image=>!image.loaded))throw new Error(`${profile.name}: representative repaired image failed to load`);
+    if(imageResults.some(image=>!image.loaded))throw new Error(`${profile.name}: representative KPCG image failed to load`);
 
     const reloadResponse=await page.reload({waitUntil:'domcontentloaded',timeout:30000});
     if(!reloadResponse||reloadResponse.status()!==200)throw new Error(`${profile.name}: hard refresh returned ${reloadResponse?.status()??'no response'}`);
@@ -193,7 +193,7 @@ try{
   await browser.close();
 }
 
-const summary={release:'v16.1',mode:productionMode?'production':'preview',commitSha,baseURL,generatedAt:new Date().toISOString(),releaseEvidence,desktopPassed:results.some(result=>result.profile==='desktop'&&result.passed),mobilePassed:results.some(result=>result.profile==='mobile'&&result.passed),passed:!failed&&results.every(result=>result.passed),results};
+const summary={release:'v16.2',mode:productionMode?'production':'preview',commitSha,baseURL,generatedAt:new Date().toISOString(),releaseEvidence,desktopPassed:results.some(result=>result.profile==='desktop'&&result.passed),mobilePassed:results.some(result=>result.profile==='mobile'&&result.passed),passed:!failed&&results.every(result=>result.passed),results};
 fs.writeFileSync(outputPath,`${JSON.stringify(summary,null,2)}\n`,'utf8');
 if(!summary.passed){
   console.error(`KPCG ${productionMode?'production ':' '}browser smoke failed; see ${path.relative(root,outputPath)}`);
