@@ -74,5 +74,5 @@ jobs:
         with:
           name: kpcg-v16.1-acceptance-${{ github.run_id }}
           path: artifacts/
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 30
