@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - acceptance-hardening-v16-1
+      - acceptance-qa-v16-1
+      - repair-v16-1-public-assets
   pull_request:
     branches:
       - main
@@ -15,9 +17,77 @@ permissions:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    env:
+      KPCG_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install project tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Enforce strict public visual-asset quality
+        run: npm run acceptance:assets
+
+      - name: Run strict release verification
+        run: npm run verify:strict
+
+      - name: Emit reconstructed v16.1 acceptance artifacts
+        run: node scripts/acceptance-smoke.mjs --strict-assets --emit-artifacts
+
+      - name: Install Playwright browser QA tooling
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run desktop and mobile browser smoke against Wrangler preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          npx --yes wrangler@4.131.1 dev --local --port 8787 > artifacts/wrangler-preview.log 2>&1 &
+          WRANGLER_PID=$!
+          trap 'kill "$WRANGLER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8787/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/wrangler-preview.log
+            exit 1
+          fi
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
+
+      - name: Upload rendered acceptance and browser-QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-v16.1-acceptance-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  production-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KPCG_COMMIT_SHA: ${{ github.sha }}
+      KPCG_PRODUCTION_URL: https://kpcg.ayivisolutions.com
+    steps:
+      - name: Check out accepted main commit
         uses: actions/checkout@v4
 
       - name: Use Node.js 20
@@ -25,9 +95,47 @@ jobs:
         with:
           node-version: 20
 
-      - name: Reconstruct and validate v16 runtime release
-        run: node scripts/acceptance-smoke.mjs
+      - name: Install browser QA tooling
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
 
-      - name: Audit strict public visual-asset quality
-        continue-on-error: true
-        run: node scripts/acceptance-smoke.mjs --strict-assets
+      - name: Wait for Cloudflare Git deployment to expose accepted release bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          expected_sha='8f145f0bbd12e6ea704cbda20f985b5baf472eb6080d9a7fd8dc674e93ade2a3'
+          ready=0
+          for attempt in {1..24}; do
+            release_query="release=${GITHUB_SHA}-${attempt}"
+            if curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' \
+                 -o /tmp/kpcg-featured.webp "${KPCG_PRODUCTION_URL}/assets/featured-locally-led-action.webp?${release_query}" \
+              && [ "$(wc -c < /tmp/kpcg-featured.webp)" -ge 40000 ] \
+              && [ "$(sha256sum /tmp/kpcg-featured.webp | awk '{print $1}')" = "$expected_sha" ] \
+              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" | grep -q 'KPCGApplyExperiencePatchV16' \
+              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" | grep -q 'kpcg-v16.1-20260912'; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'Cloudflare production did not expose the accepted v16.1 release bytes within the verification window.'
+            exit 1
+          fi
+
+      - name: Run production desktop/mobile, route, asset and service-worker smoke
+        run: |
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/browser-smoke.mjs
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
+
+      - name: Upload production verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-v16.1-production-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
