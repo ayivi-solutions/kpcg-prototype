@@ -40,7 +40,8 @@
   ];
   const EXPERIENCE_PATCHES=[
     {urls:["/app/patch-v15-01.txt?v=15","/app/patch-v15-02.txt?v=15","/app/patch-v15-03.txt?v=15","/app/patch-v15-04.txt?v=15"],fn:"KPCGApplyExperienceRedesignV15",label:"v15 validated experience"},
-    {urls:["/app/patch-v16-01.txt?v=16","/app/patch-v16-02.txt?v=16"],fn:"KPCGApplyExperiencePatchV16",label:"v16 public experience"}
+    {urls:["/app/patch-v16-01.txt?v=16","/app/patch-v16-02.txt?v=16"],fn:"KPCGApplyExperiencePatchV16",label:"v16 public experience"},
+    {urls:["/app/patch-v16-2-real-imagery.txt?v=162"],fn:"KPCGApplyRealImageryV162",label:"real KPCG imagery"}
   ];
   const FETCH_TIMEOUT_MS=12000;
   const status=document.getElementById('status');
@@ -126,6 +127,9 @@
 
     setStatus('Applying public experience refinement');
     html=await applyPatchSafely(html,EXPERIENCE_PATCHES[1]);
+
+    setStatus('Applying verified KPCG imagery');
+    html=await applyPatchSafely(html,EXPERIENCE_PATCHES[2]);
 
     validateHtml(html,null,'final application');
 
