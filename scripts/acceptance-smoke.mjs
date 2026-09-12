@@ -10,6 +10,7 @@ const root=path.resolve(__dirname,'..');
 const publicDir=path.join(root,'public');
 const read=relative=>fs.readFileSync(path.join(publicDir,relative),'utf8').trim();
 const strictAssets=process.argv.includes('--strict-assets');
+const emitArtifacts=process.argv.includes('--emit-artifacts');
 
 const gunzipB64=encoded=>zlib.gunzipSync(Buffer.from(encoded.replace(/\s+/g,''),'base64')).toString('utf8');
 
@@ -104,6 +105,31 @@ for(const marker of ['patch-v13.txt?v=13','patch-v15-04.txt?v=15','patch-v16-02.
 const manifest=JSON.parse(read('manifest.webmanifest'));
 if(manifest.start_url!=='/#/home')throw new Error(`Unexpected manifest start_url: ${manifest.start_url}`);
 if(!Array.isArray(manifest.icons)||manifest.icons.length===0)throw new Error('Manifest has no install icon');
+
+if(emitArtifacts){
+  const artifactDir=path.join(root,'artifacts');
+  fs.mkdirSync(artifactDir,{recursive:true});
+  fs.writeFileSync(path.join(artifactDir,'kpcg-v16-1-final.html'),html,'utf8');
+  const hashRoutes=[...new Set([...html.matchAll(/#\/[A-Za-z0-9_?=&/.-]+/g)].map(match=>match[0]))].sort();
+  const headings=[...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)]
+    .map(match=>match[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim())
+    .filter(Boolean);
+  const summary={
+    release:'v16.1',
+    generatedAt:new Date().toISOString(),
+    finalHtmlCharacters:html.length,
+    runtimeStages:stages.map(([,fn,label])=>({fn,label})),
+    hashRoutes,
+    headingCount:headings.length,
+    headings,
+    thumbnailGradeAssets:thumbnailGrade,
+    hasIllustrativeLanguage:/illustrative/i.test(html),
+    hasPrototypeLanguage:/prototype/i.test(html),
+    hasDemoLanguage:/\bdemo(?:nstration)?\b/i.test(html)
+  };
+  fs.writeFileSync(path.join(artifactDir,'acceptance-summary.json'),JSON.stringify(summary,null,2),'utf8');
+  console.log(`PASS emitted acceptance artifact with ${hashRoutes.length} hash routes and ${headings.length} headings`);
+}
 
 console.log(`PASS final v16 acceptance document: ${html.length.toLocaleString()} chars`);
 console.log(`KPCG v16.1 ${strictAssets?'strict ':' '}acceptance smoke test passed.`);
