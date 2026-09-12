@@ -5,8 +5,12 @@
   "description": "KPCG Digital Platform executive prototype deployed as a Cloudflare Worker with Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
+    "acceptance": "node scripts/acceptance-smoke.mjs",
+    "test": "npm run acceptance",
+    "predeploy": "npm run acceptance",
     "deploy": "wrangler deploy",
-    "deploy:dry": "wrangler deploy --dry-run"
+    "deploy:dry": "wrangler deploy --dry-run",
+    "verify": "npm run acceptance && npm run deploy:dry"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
