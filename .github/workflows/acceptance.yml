@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - acceptance-hardening-v16-1
+      - acceptance-qa-v16-1
+      - repair-v16-1-public-assets
   pull_request:
     branches:
       - main
@@ -15,7 +17,9 @@ permissions:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    env:
+      KPCG_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -25,9 +29,50 @@ jobs:
         with:
           node-version: 20
 
-      - name: Reconstruct and validate v16 runtime release
-        run: node scripts/acceptance-smoke.mjs
+      - name: Install project tooling
+        run: npm install --no-audit --no-fund
 
-      - name: Audit strict public visual-asset quality
-        continue-on-error: true
-        run: node scripts/acceptance-smoke.mjs --strict-assets
+      - name: Enforce strict public visual-asset quality
+        run: npm run acceptance:assets
+
+      - name: Run strict release verification
+        run: npm run verify:strict
+
+      - name: Emit reconstructed v16.1 acceptance artifacts
+        run: node scripts/acceptance-smoke.mjs --strict-assets --emit-artifacts
+
+      - name: Install Playwright browser QA tooling
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run desktop and mobile browser smoke against Wrangler preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          npx wrangler dev --local --port 8787 > artifacts/wrangler-preview.log 2>&1 &
+          WRANGLER_PID=$!
+          trap 'kill "$WRANGLER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8787/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/wrangler-preview.log
+            exit 1
+          fi
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
+
+      - name: Upload rendered acceptance and browser-QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-v16.1-acceptance-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
