@@ -1,0 +1,1 @@
+KPCG production-quality replacement image assets staged for atomic activation. Files are AVIF and preserve high display resolution with efficient delivery.
