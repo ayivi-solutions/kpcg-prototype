@@ -172,8 +172,8 @@ try{
     const routeCandidates=domChecks.hashRoutes.filter(route=>route!=='#/home').slice(0,4);
     const testedRoutes=['#/home'];
     for(const route of routeCandidates){
-      const routeResponse=await page.goto(`${baseURL}/${route}`,{waitUntil:'domcontentloaded',timeout:30000});
-      if(!routeResponse||routeResponse.status()!==200)throw new Error(`${profile.name}: route ${route} returned ${routeResponse?.status()??'no response'}`);
+      await page.evaluate(targetHash=>{location.hash=targetHash;},route);
+      await page.waitForFunction(expectedHash=>location.hash===expectedHash,route,{timeout:5000});
       await page.waitForFunction(()=>Boolean(document.querySelector('main,#app,#root,[data-page],[class*="shell"],[class*="page"]'))&&(document.body?.innerText||'').trim().length>100,null,{timeout:15000});
       testedRoutes.push(route);
     }
