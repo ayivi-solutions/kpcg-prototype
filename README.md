@@ -30,7 +30,13 @@ Before any deployment, reconstruct and validate the complete application chain:
 npm run acceptance
 ```
 
-The acceptance gate verifies required release assets, reconstructs the compressed base application, applies v11, v12, v13, validated v15 and v16 in sequence, rejects malformed or unexpectedly truncated output, verifies the v16.1 cache contract and PWA metadata, and enforces a minimum quality floor for the sixteen public visual assets.
+The blocking acceptance gate verifies required release assets, reconstructs the compressed base application, applies v11, v12, v13, validated v15 and v16 in sequence, rejects malformed or unexpectedly truncated output, and verifies the v16.1 cache contract and PWA metadata. It also reports any public visual assets that remain below the quality floor without allowing that P1 visual issue to block P0 runtime hardening.
+
+The strict visual-asset gate is separate and remains blocking until all sixteen public visual assets meet the release floor:
+
+```bash
+npm run acceptance:assets
+```
 
 For the full pre-deployment verification pass:
 
@@ -38,7 +44,13 @@ For the full pre-deployment verification pass:
 npm run verify
 ```
 
-`npm run deploy` is protected by the `predeploy` acceptance gate. GitHub also runs the same reconstruction check on pushes to `main`, the v16.1 hardening branch, and pull requests targeting `main`.
+For strict runtime plus visual-asset verification:
+
+```bash
+npm run verify:strict
+```
+
+`npm run deploy` is protected by the blocking `predeploy` runtime acceptance gate. GitHub also runs the same reconstruction check on pushes to `main`, the v16.1 hardening branch, and pull requests targeting `main`.
 
 ## Runtime hardening
 
