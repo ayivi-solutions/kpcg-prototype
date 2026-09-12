@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "wrangler dev",
     "acceptance": "node scripts/acceptance-smoke.mjs",
+    "acceptance:assets": "node scripts/acceptance-smoke.mjs --strict-assets",
     "test": "npm run acceptance",
     "predeploy": "npm run acceptance",
     "deploy": "wrangler deploy",
     "deploy:dry": "wrangler deploy --dry-run",
-    "verify": "npm run acceptance && npm run deploy:dry"
+    "verify": "npm run acceptance && npm run deploy:dry",
+    "verify:strict": "npm run acceptance:assets && npm run deploy:dry"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
