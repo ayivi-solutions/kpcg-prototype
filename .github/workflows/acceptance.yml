@@ -7,6 +7,7 @@ on:
       - acceptance-hardening-v16-1
       - acceptance-qa-v16-1
       - repair-v16-1-public-assets
+      - real-kpcg-imagery-v16-2
   pull_request:
     branches:
       - main
@@ -38,7 +39,7 @@ jobs:
       - name: Run strict release verification
         run: npm run verify:strict
 
-      - name: Emit reconstructed v16.1 acceptance artifacts
+      - name: Emit reconstructed v16.2 acceptance artifacts
         run: node scripts/acceptance-smoke.mjs --strict-assets --emit-artifacts
 
       - name: Install Playwright browser QA tooling
@@ -73,7 +74,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v16.1-acceptance-${{ github.run_id }}
+          name: kpcg-v16.2-acceptance-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30
@@ -106,23 +107,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          expected_sha='8f145f0bbd12e6ea704cbda20f985b5baf472eb6080d9a7fd8dc674e93ade2a3'
+          expected_sha='1cef51ee7cf36c4e8b06c85c79b55d54b9fe9c7b62369148cab6dfbfc38ffb4a'
           ready=0
           for attempt in {1..24}; do
             release_query="release=${GITHUB_SHA}-${attempt}"
             if curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' \
-                 -o /tmp/kpcg-featured.webp "${KPCG_PRODUCTION_URL}/assets/featured-locally-led-action.webp?${release_query}" \
-              && [ "$(wc -c < /tmp/kpcg-featured.webp)" -ge 40000 ] \
-              && [ "$(sha256sum /tmp/kpcg-featured.webp | awk '{print $1}')" = "$expected_sha" ] \
-              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" | grep -q 'KPCGApplyExperiencePatchV16' \
-              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" | grep -q 'kpcg-v16.1-20260912'; then
+                 -o /tmp/kpcg-featured.jpg "${KPCG_PRODUCTION_URL}/assets/real/featured-community-tree-action.jpg?${release_query}" \
+              && [ "$(wc -c < /tmp/kpcg-featured.jpg)" -ge 40000 ] \
+              && [ "$(sha256sum /tmp/kpcg-featured.jpg | awk '{print $1}')" = "$expected_sha" ] \
+              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" | grep -q 'KPCGApplyRealImageryV162' \
+              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" | grep -q 'kpcg-v16.2-20260912'; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'Cloudflare production did not expose the accepted v16.1 release bytes within the verification window.'
+            echo 'Cloudflare production did not expose the v16.2 verified-imagery release bytes within the verification window.'
             exit 1
           fi
 
@@ -135,7 +136,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v16.1-production-${{ github.run_id }}
+          name: kpcg-v16.2-production-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30

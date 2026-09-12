@@ -8,7 +8,7 @@ const __dirname=path.dirname(__filename);
 const root=path.resolve(__dirname,'..');
 const artifactDir=path.join(root,'artifacts');
 const baseURL=(process.env.KPCG_PREVIEW_URL||'http://127.0.0.1:8787').replace(/\/$/,'');
-const expectedCache='kpcg-kpcg-v16.1-20260912';
+const expectedCache='kpcg-kpcg-v16.2-20260912';
 const outputPath=path.join(artifactDir,'service-worker-cache-summary.json');
 fs.mkdirSync(artifactDir,{recursive:true});
 
@@ -34,10 +34,10 @@ try{
   const expectedCachePresent=cacheKeys.includes(expectedCache);
   if(!expectedCachePresent)throw new Error(`expected service-worker cache is missing: ${expectedCache}`);
   if(staleCaches.length)throw new Error(`stale service-worker caches remain: ${staleCaches.join(', ')}`);
-  summary={release:'v16.1',baseURL,registration,expectedCache,cacheKeys,staleCaches,expectedCachePresent,passed:true};
+  summary={release:'v16.2',baseURL,registration,expectedCache,cacheKeys,staleCaches,expectedCachePresent,passed:true};
   await context.close();
 }catch(error){
-  summary={release:'v16.1',baseURL,expectedCache,passed:false,error:error.stack||error.message||String(error)};
+  summary={release:'v16.2',baseURL,expectedCache,passed:false,error:error.stack||error.message||String(error)};
   process.exitCode=1;
 }finally{
   await browser.close();
