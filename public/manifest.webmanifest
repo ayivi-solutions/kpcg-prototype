@@ -1,10 +1,19 @@
 {
-  "name": "KPCG Digital Platform Prototype",
+  "id": "/#/home",
+  "name": "KPCG Digital Platform",
   "short_name": "KPCG",
-  "description": "Kenya Platform for Climate Governance interactive prototype",
+  "description": "Kenya Platform for Climate Governance digital platform",
   "start_url": "/#/home",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#0b5139",
-  "background_color": "#fffdf8"
+  "background_color": "#fffdf8",
+  "icons": [
+    {
+      "src": "/assets/kpcg-logo.webp",
+      "sizes": "any",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
 }
