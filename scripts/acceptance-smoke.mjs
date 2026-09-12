@@ -55,6 +55,32 @@ for(const relative of expectedFiles){
   if(fs.statSync(full).size===0)throw new Error(`Empty required release asset: ${relative}`);
 }
 
+const visualAssets=[
+  'assets/featured-locally-led-action.webp',
+  'assets/leader-governance.webp',
+  'assets/leader-programme.webp',
+  'assets/leader-secretariat.webp',
+  'assets/media-01-county-dialogue.webp',
+  'assets/media-02-community-adaptation.webp',
+  'assets/media-03-governance-interview.webp',
+  'assets/media-04-evidence-cover.webp',
+  'assets/media-05-county-dialogue.webp',
+  'assets/media-06-community-adaptation.webp',
+  'assets/media-07-governance-interview.webp',
+  'assets/media-08-evidence-cover.webp',
+  'assets/media-09-county-dialogue.webp',
+  'assets/media-10-community-adaptation.webp',
+  'assets/media-11-governance-interview.webp',
+  'assets/media-12-evidence-cover.webp'
+];
+for(const relative of visualAssets){
+  const full=path.join(publicDir,relative);
+  if(!fs.existsSync(full))throw new Error(`Missing public visual asset: ${relative}`);
+  const bytes=fs.statSync(full).size;
+  if(bytes<40000)throw new Error(`Public visual asset is still thumbnail-grade: ${relative} (${bytes} bytes)`);
+}
+console.log(`PASS public visual asset quality floor: ${visualAssets.length} assets`);
+
 const index=read('index.html');
 for(const marker of ['patch-v13.txt?v=13','patch-v15-04.txt?v=15','patch-v16-02.txt?v=16','KPCGApplyExperiencePatchV16','FETCH_TIMEOUT_MS','validateHtml']){
   if(!index.includes(marker))throw new Error(`Loader is missing required release marker: ${marker}`);
