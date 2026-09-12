@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import zlib from 'node:zlib';
+import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
 const __filename=fileURLToPath(import.meta.url);
@@ -11,6 +12,12 @@ const publicDir=path.join(root,'public');
 const read=relative=>fs.readFileSync(path.join(publicDir,relative),'utf8').trim();
 const strictAssets=process.argv.includes('--strict-assets');
 const emitArtifacts=process.argv.includes('--emit-artifacts');
+const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||process.env.GITHUB_SHA||'unknown';
+const artifactDir=path.join(root,'artifacts');
+const finalArtifactPath=path.join(artifactDir,'kpcg-v16.1-final.html');
+const summaryArtifactPath=path.join(artifactDir,'acceptance-summary.json');
+const assetQualityFloorBytes=40000;
+const serviceWorkerRelease='kpcg-v16.1-20260912';
 
 const gunzipB64=encoded=>zlib.gunzipSync(Buffer.from(encoded.replace(/\s+/g,''),'base64')).toString('utf8');
 
@@ -62,15 +69,18 @@ const visualAssets=[
   'assets/media-05-county-dialogue.webp','assets/media-06-community-adaptation.webp','assets/media-07-governance-interview.webp','assets/media-08-evidence-cover.webp',
   'assets/media-09-county-dialogue.webp','assets/media-10-community-adaptation.webp','assets/media-11-governance-interview.webp','assets/media-12-evidence-cover.webp'
 ];
+const visualAssetResults=[];
 const thumbnailGrade=[];
 for(const relative of visualAssets){
   const full=path.join(publicDir,relative);
   if(!fs.existsSync(full))throw new Error(`Missing public visual asset: ${relative}`);
   const bytes=fs.statSync(full).size;
-  if(bytes<40000)thumbnailGrade.push(`${relative} (${bytes} bytes)`);
+  const passed=bytes>=assetQualityFloorBytes;
+  visualAssetResults.push({path:relative,bytes,passed});
+  if(!passed)thumbnailGrade.push(`${relative} (${bytes} bytes)`);
 }
 if(thumbnailGrade.length){
-  const message=`${thumbnailGrade.length} public visual assets remain below the 40 KB acceptance floor:\n- ${thumbnailGrade.join('\n- ')}`;
+  const message=`${thumbnailGrade.length} public visual assets remain below the ${assetQualityFloorBytes.toLocaleString()} byte acceptance floor:\n- ${thumbnailGrade.join('\n- ')}`;
   if(strictAssets)throw new Error(message);
   console.warn(`WARN ${message}`);
 }else{
@@ -91,45 +101,71 @@ const stages=[
   [['app/patch-v15-01.txt','app/patch-v15-02.txt','app/patch-v15-03.txt','app/patch-v15-04.txt'],'KPCGApplyExperienceRedesignV15','v15 validated experience'],
   [['app/patch-v16-01.txt','app/patch-v16-02.txt'],'KPCGApplyExperiencePatchV16','v16 public experience']
 ];
+const appliedStages=[];
 for(const [files,fn,label] of stages){
   html=apply(html,files,fn,label);
+  appliedStages.push({label,fn,files,characters:html.length,bytes:Buffer.byteLength(html,'utf8')});
   console.log(`PASS ${label}: ${html.length.toLocaleString()} chars`);
 }
 
 const sw=read('sw.js');
-if(!sw.includes('kpcg-v16.1-20260912'))throw new Error('Service worker cache release is not v16.1-20260912');
+if(!sw.includes(serviceWorkerRelease))throw new Error(`Service worker cache release is not ${serviceWorkerRelease}`);
 for(const marker of ['patch-v13.txt?v=13','patch-v15-04.txt?v=15','patch-v16-02.txt?v=16']){
   if(!sw.includes(marker))throw new Error(`Service worker does not cache release asset ${marker}`);
 }
 
-const manifest=JSON.parse(read('manifest.webmanifest'));
+let manifest;
+try{
+  manifest=JSON.parse(read('manifest.webmanifest'));
+}catch(error){
+  throw new Error(`Manifest is invalid JSON: ${error.message}`);
+}
 if(manifest.start_url!=='/#/home')throw new Error(`Unexpected manifest start_url: ${manifest.start_url}`);
 if(!Array.isArray(manifest.icons)||manifest.icons.length===0)throw new Error('Manifest has no install icon');
 
 if(emitArtifacts){
-  const artifactDir=path.join(root,'artifacts');
   fs.mkdirSync(artifactDir,{recursive:true});
-  fs.writeFileSync(path.join(artifactDir,'kpcg-v16-1-final.html'),html,'utf8');
+  fs.writeFileSync(finalArtifactPath,html,'utf8');
+  const finalHtmlBytes=Buffer.byteLength(html,'utf8');
+  const finalHtmlSha256=crypto.createHash('sha256').update(html,'utf8').digest('hex');
   const hashRoutes=[...new Set([...html.matchAll(/#\/[A-Za-z0-9_?=&/.-]+/g)].map(match=>match[0]))].sort();
   const headings=[...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)]
     .map(match=>match[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim())
     .filter(Boolean);
   const summary={
     release:'v16.1',
+    acceptedBaselineCandidate:true,
     generatedAt:new Date().toISOString(),
+    commitSha,
+    finalArtifact:'artifacts/kpcg-v16.1-final.html',
     finalHtmlCharacters:html.length,
-    runtimeStages:stages.map(([,fn,label])=>({fn,label})),
+    finalHtmlBytes,
+    finalHtmlSha256,
+    patchStagesApplied:appliedStages,
+    serviceWorker:{release:serviceWorkerRelease,validated:true},
+    manifestValidation:{validated:true,startUrl:manifest.start_url,iconCount:manifest.icons.length},
+    assetQuality:{
+      validated:true,
+      strictMode:strictAssets,
+      passed:thumbnailGrade.length===0,
+      qualityFloorBytes:assetQualityFloorBytes,
+      checkedAssets:visualAssets.length,
+      thumbnailGradeWarnings:thumbnailGrade,
+      assets:visualAssetResults
+    },
     hashRoutes,
     headingCount:headings.length,
     headings,
-    thumbnailGradeAssets:thumbnailGrade,
-    hasIllustrativeLanguage:/illustrative/i.test(html),
-    hasPrototypeLanguage:/prototype/i.test(html),
-    hasDemoLanguage:/\bdemo(?:nstration)?\b/i.test(html)
+    integrityWarnings:{
+      hasIllustrativeLanguage:/illustrative/i.test(html),
+      hasPrototypeLanguage:/prototype/i.test(html),
+      hasDemoLanguage:/\bdemo(?:nstration)?\b/i.test(html)
+    }
   };
-  fs.writeFileSync(path.join(artifactDir,'acceptance-summary.json'),JSON.stringify(summary,null,2),'utf8');
-  console.log(`PASS emitted acceptance artifact with ${hashRoutes.length} hash routes and ${headings.length} headings`);
+  fs.writeFileSync(summaryArtifactPath,`${JSON.stringify(summary,null,2)}\n`,'utf8');
+  console.log(`PASS emitted ${path.relative(root,finalArtifactPath)} (${finalHtmlBytes.toLocaleString()} bytes)`);
+  console.log(`PASS emitted ${path.relative(root,summaryArtifactPath)} for commit ${commitSha}`);
 }
 
-console.log(`PASS final v16 acceptance document: ${html.length.toLocaleString()} chars`);
+console.log(`PASS final v16 acceptance document: ${html.length.toLocaleString()} chars (${Buffer.byteLength(html,'utf8').toLocaleString()} bytes)`);
 console.log(`KPCG v16.1 ${strictAssets?'strict ':' '}acceptance smoke test passed.`);
