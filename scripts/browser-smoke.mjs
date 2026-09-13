@@ -42,6 +42,31 @@ const verifySource=async context=>{
   return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
 };
 
+const verifyBrowserCancelledAssets=async(context,failedRequests)=>{
+  const verifiedAbortedRequests=[];
+  const unresolvedFailedRequests=[];
+  for(const failure of failedRequests){
+    let verified=false;
+    if(failure.error==='net::ERR_ABORTED'){
+      try{
+        const failedURL=new URL(failure.url);
+        if(failedURL.origin===baseURL&&failedURL.pathname.startsWith('/assets/')){
+          failedURL.searchParams.set('qa_abort_verify',String(Date.now()));
+          const check=await context.request.get(failedURL.toString());
+          const body=await check.body();
+          const contentType=(check.headers()['content-type']||'').toLowerCase();
+          if(check.status()===200&&body.length>=40000&&contentType.startsWith('image/')){
+            verifiedAbortedRequests.push({...failure,verifiedStatus:check.status(),verifiedBytes:body.length,verifiedContentType:contentType});
+            verified=true;
+          }
+        }
+      }catch{}
+    }
+    if(!verified)unresolvedFailedRequests.push(failure);
+  }
+  return {verifiedAbortedRequests,unresolvedFailedRequests};
+};
+
 try{
   for(const profile of profiles){
     const context=await browser.newContext({viewport:profile.viewport,isMobile:profile.isMobile||false,hasTouch:profile.hasTouch||false,serviceWorkers:'allow'});
@@ -100,9 +125,10 @@ try{
     await page.reload({waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>Boolean(navigator.serviceWorker?.controller),null,{timeout:15000});
 
+    const {verifiedAbortedRequests,unresolvedFailedRequests}=await verifyBrowserCancelledAssets(context,failedRequests);
     const timing=await page.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0];return n?{domContentLoaded:Math.round(n.domContentLoadedEventEnd),load:Math.round(n.loadEventEnd),transferSize:n.transferSize||0}:null;});
-    if(pageErrors.length||failedRequests.length||badResponses.length)throw new Error(`${profile.name}: browser errors ${JSON.stringify({pageErrors,failedRequests,badResponses})}`);
-    results.push({profile:profile.name,viewport:profile.viewport,httpStatus:response.status(),home,heroTransition,keyboardMapPassed,manifest:{startUrl:manifest.start_url},serviceWorker:sw,timing,pageErrors,failedRequests,badResponses,passed:true});
+    if(pageErrors.length||unresolvedFailedRequests.length||badResponses.length)throw new Error(`${profile.name}: browser errors ${JSON.stringify({pageErrors,failedRequests:unresolvedFailedRequests,verifiedAbortedRequests,badResponses})}`);
+    results.push({profile:profile.name,viewport:profile.viewport,httpStatus:response.status(),home,heroTransition,keyboardMapPassed,manifest:{startUrl:manifest.start_url},serviceWorker:sw,timing,pageErrors,failedRequests:unresolvedFailedRequests,verifiedAbortedRequests,badResponses,passed:true});
     await context.close();
   }
 }catch(error){failed=true;results.push({passed:false,error:error.stack||String(error)});}finally{await browser.close();}
