@@ -4,7 +4,13 @@ const APP_SHELL=[
   '/',
   '/index.html',
   '/manifest.webmanifest',
+  '/favicon.ico',
+  '/favicon-32x32.png',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
   '/assets/kpcg-logo.webp',
+  '/assets/kpcg-social-card.jpg',
   '/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg'
 ];
 

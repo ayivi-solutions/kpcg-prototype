@@ -4,15 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b5139">
+<meta name="color-scheme" content="light">
+<meta name="application-name" content="KPCG">
+<meta name="apple-mobile-web-app-title" content="KPCG">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="Kenya Platform for Climate Governance — county climate action, evidence, programmes, policy, news, events and participation across Kenya.">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Kenya Platform for Climate Governance">
 <meta property="og:description" content="Explore county climate governance, evidence, programmes, policy activity, events and public participation across Kenya.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_KE">
+<meta property="og:site_name" content="Kenya Platform for Climate Governance">
+<meta property="og:url" content="https://kpcg.ayivisolutions.com/">
+<meta property="og:image" content="https://kpcg.ayivisolutions.com/assets/kpcg-social-card.jpg">
+<meta property="og:image:secure_url" content="https://kpcg.ayivisolutions.com/assets/kpcg-social-card.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="KPCG — climate governance that connects people, evidence and action">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kenya Platform for Climate Governance">
+<meta name="twitter:description" content="Explore county climate governance, evidence, programmes, policy activity, events and public participation across Kenya.">
+<meta name="twitter:image" content="https://kpcg.ayivisolutions.com/assets/kpcg-social-card.jpg">
+<meta name="twitter:image:alt" content="KPCG — climate governance that connects people, evidence and action">
 <link rel="canonical" href="https://kpcg.ayivisolutions.com/">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title>Kenya Platform for Climate Governance</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Kenya Platform for Climate Governance","alternateName":"KPCG","url":"https://kpcg.ayivisolutions.com/","description":"A national climate-governance platform connecting counties, evidence, programmes, policy activity and public participation.","inLanguage":"en-KE","image":"https://kpcg.ayivisolutions.com/assets/kpcg-social-card.jpg"}</script>
 <style>
 :root{
   --brand-primary:#0b5139;--brand-primary-dark:#063726;--brand-primary-light:#e6f1eb;
@@ -154,13 +177,6 @@ html{scroll-behavior:smooth}.page-shell{overflow:clip}.site-header{backdrop-filt
 @media(prefers-reduced-motion:reduce){.v16-hero-slide,.v16-hero-slide img,.v16-story img,.v16-pulse-item,.v16-theme-link{transition:none!important;animation:none!important}.v16-live-dot{animation:none!important}}
 </style>
 
-<meta name="robots" content="index,follow">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Kenya Platform for Climate Governance">
-<meta property="og:description" content="Explore county climate governance, evidence, programmes, policy activity, events and public participation across Kenya.">
-<meta property="og:url" content="https://kpcg.ayivisolutions.com/">
-<meta property="og:image" content="https://kpcg.ayivisolutions.com/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg">
-<meta name="twitter:card" content="summary_large_image">
 <link rel="preload" as="image" href="/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg" fetchpriority="high">
 
 <meta name="copyright" content="© 2026 AYIVI Systems Limited. Proprietary evaluation prototype. All rights reserved.">
@@ -338,6 +354,64 @@ function routeView(){const raw=state.route||'#/home',route=raw.split('?')[0],par
 if(route==='#/home'||route==='#/')return home();if(route==='#/about')return about();if(route==='#/governance')return governance();if(route==='#/where-we-work')return whereWeWork();if(parts[0]==='county')return countyDetail(parts[1]);if(route==='#/themes')return themesIndex();if(parts[0]==='theme')return themeDetail(parts[1]);if(route==='#/programmes')return programmesIndex();if(parts[0]==='programme')return programmeDetail(parts[1]);if(parts[0]==='project')return projectDetail(parts[1]);if(route==='#/policy')return policyIndex();if(parts[0]==='policy')return policyDetail(parts[1]);if(route==='#/knowledge')return knowledge();if(parts[0]==='resource')return resourceDetail(parts[1]);if(route==='#/news')return news();if(parts[0]==='article')return articleDetail(parts[1]);if(route==='#/events')return eventsIndex();if(parts[0]==='event')return eventDetail(parts[1]);if(route==='#/multimedia')return multimedia();if(route==='#/membership')return membership();if(route==='#/members')return membersIndex();if(parts[0]==='member')return memberDetail(parts[1]);if(route==='#/opportunities')return opportunitiesIndex();if(parts[0]==='opportunity')return opportunityDetail(parts[1]);if(route==='#/engage')return engage();if(route==='#/saved')return savedItems();if(route==='#/privacy')return legalPage('privacy');if(route==='#/terms')return legalPage('terms');if(route==='#/accessibility')return legalPage('accessibility');if(parts[0]==='search')return globalSearch(parts.slice(1).join('/'));return notFound()}
 function loadingMarkup(){return `<main id="main" class="loading-screen"><div class="container"><div class="skeleton" style="height:36px;width:44%;border-radius:8px"></div><div class="skeleton" style="height:18px;width:72%;border-radius:8px;margin-top:16px"></div><div class="grid three" style="margin-top:28px"><div class="skeleton card"></div><div class="skeleton card"></div><div class="skeleton card"></div></div></div></main>`}
 function updatePageMeta(){const base='https://kpcg.ayivisolutions.com',r=state.route.split('?')[0],parts=r.replace(/^#\//,'').split('/').filter(Boolean);const defaults={title:'KPCG Digital Platform',description:'Kenya Platform for Climate Governance — evidence, programmes, policy, counties and public engagement.'};const map={'#/home':['Home','A national climate-governance dashboard connecting counties, evidence, programmes, policy activity and public participation.'],'#/about':['About KPCG','Institutional identity, governance, leadership and the illustrative partner ecosystem for KPCG.'],'#/where-we-work':['Where We Work','Explore all 47 Kenyan counties through an administrative map, county centres and relational climate-governance activity.'],'#/themes':['Thematic Work','Explore KPCG prototype thematic areas and their connected programmes, policy, evidence and counties.'],'#/programmes':['Programmes & Projects','Discover illustrative programmes and projects connected to counties, themes, partners and evidence.'],'#/policy':['Policy & Advocacy','Explore illustrative policy engagements, submissions, communiqués, position papers and negotiation updates.'],'#/knowledge':['Knowledge Hub','Search and filter KPCG prototype reports, briefs, research, toolkits, datasets and other evidence resources.'],'#/news':['News & Insights','Read illustrative KPCG news, analysis, commentary, member stories and field updates.'],'#/events':['Events & Coverage','Discover upcoming, live, ongoing and concluded climate-governance events and coverage.'],'#/multimedia':['Multimedia Centre','Browse KPCG prototype photo galleries, video, audio interviews and multimedia collections.'],'#/membership':['Membership','Explore the KPCG membership pathway and submit a privacy-aware expression of interest.'],'#/members':['Member Directory','Browse approved public demo member profiles by county and theme.'],'#/opportunities':['Opportunities','Discover illustrative calls, consultancies, jobs, grants, training and member opportunities.'],'#/engage':['Engage','Contact KPCG, submit a story or resource, enquire about partnership, or subscribe for updates.']};let title=map[r]?.[0]||defaults.title,description=map[r]?.[1]||defaults.description;if(parts[0]==='county'){const x=bySlug(counties,parts[1]);if(x){title=x.name+' County';description=`Explore illustrative KPCG programmes, members, evidence, stories and events connected to ${x.name} County.`}}else if(parts[0]==='theme'){const x=bySlug(themes,parts[1]);if(x){title=x.title;description=x.description}}else if(parts[0]==='programme'){const x=bySlug(programmes,parts[1]);if(x){title=x.title;description=x.description}}else if(parts[0]==='resource'){const x=bySlug(resources,parts[1]);if(x){title=x.title;description=x.abstract}}else if(parts[0]==='article'){const x=bySlug(articles,parts[1]);if(x){title=x.title;description=x.excerpt}}else if(parts[0]==='event'){const x=bySlug(events,parts[1]);if(x){title=x.title;description=x.summary}}else if(parts[0]==='opportunity'){const x=bySlug(opportunities,parts[1]);if(x){title=x.title;description=x.description}}if(r.startsWith('#/cms')){title='CMS Demo';description='KPCG administrative prototype for structured content, workflow, media, governance and analytics.'}document.title=`${title} — KPCG`;const setMeta=(sel,attr,val)=>{let el=$(sel);if(!el){el=document.createElement('meta');if(sel.includes('property='))el.setAttribute('property',attr);else el.setAttribute('name',attr);document.head.append(el)}el.setAttribute('content',val)};setMeta('meta[name="description"]','description',description);setMeta('meta[property="og:title"]','og:title',`${title} — KPCG`);setMeta('meta[property="og:description"]','og:description',description);setMeta('meta[property="og:url"]','og:url',base+'/'+(r==='#/home'?'':r.replace(/^#\//,'')));let canon=$('link[rel="canonical"]');if(!canon){canon=document.createElement('link');canon.rel='canonical';document.head.append(canon)}canon.href=base+'/'+(r==='#/home'?'':r.replace(/^#\//,''))}
+
+function updatePageMeta(){
+  const base='https://kpcg.ayivisolutions.com';
+  const socialImage=base+'/assets/kpcg-social-card.jpg';
+  const r=state.route.split('?')[0];
+  const parts=r.replace(/^#\//,'').split('/').filter(Boolean);
+  const defaults={title:'Kenya Platform for Climate Governance',description:'Kenya Platform for Climate Governance — evidence, programmes, policy, counties and public engagement.'};
+  const map={
+    '#/home':['Kenya Platform for Climate Governance','A national climate-governance platform connecting counties, evidence, programmes, policy activity and public participation.'],
+    '#/about':['About KPCG','Discover KPCG’s institutional identity, governance, leadership and partner ecosystem.'],
+    '#/governance':['Governance & Leadership','Explore the governance and leadership model presented for the Kenya Platform for Climate Governance.'],
+    '#/where-we-work':['Where We Work','Explore all 47 Kenyan counties through an administrative map and connected climate-governance activity.'],
+    '#/themes':['Thematic Work','Explore climate themes and their connected programmes, policy, evidence and counties.'],
+    '#/programmes':['Programmes & Projects','Discover programmes and projects connected to counties, themes, partners and evidence.'],
+    '#/policy':['Policy & Advocacy','Explore policy engagements, submissions, communiqués, position papers and negotiation updates.'],
+    '#/knowledge':['Knowledge Hub','Search KPCG reports, briefs, research, toolkits, datasets and other evidence resources.'],
+    '#/news':['News & Insights','Read KPCG news, analysis, commentary, member stories and field updates.'],
+    '#/events':['Events & Coverage','Discover upcoming, live, ongoing and concluded climate-governance events and coverage.'],
+    '#/multimedia':['Multimedia Centre','Browse KPCG photo galleries, video, audio interviews and multimedia collections.'],
+    '#/membership':['Membership','Explore the KPCG membership pathway and submit an expression of interest.'],
+    '#/members':['Member Directory','Browse public member profiles by county and climate theme.'],
+    '#/opportunities':['Opportunities','Discover calls, consultancies, jobs, grants, training and member opportunities.'],
+    '#/engage':['Engage with KPCG','Contact KPCG, submit a story or resource, enquire about partnership, or subscribe for updates.'],
+    '#/privacy':['Privacy','Read the privacy information for the KPCG evaluation prototype.'],
+    '#/terms':['Terms of Use','Read the terms of use for the KPCG evaluation prototype.'],
+    '#/accessibility':['Accessibility','Read the accessibility statement for the KPCG evaluation prototype.']
+  };
+  let [title,description]=map[r]||[defaults.title,defaults.description];
+  if(parts[0]==='county'){const x=bySlug(counties,parts[1]);if(x){title=x.name+' County';description=`Explore KPCG programmes, members, evidence, stories and events connected to ${x.name} County.`}}
+  else if(parts[0]==='theme'){const x=bySlug(themes,parts[1]);if(x){title=x.title;description=x.description}}
+  else if(parts[0]==='programme'){const x=bySlug(programmes,parts[1]);if(x){title=x.title;description=x.description}}
+  else if(parts[0]==='resource'){const x=bySlug(resources,parts[1]);if(x){title=x.title;description=x.abstract}}
+  else if(parts[0]==='article'){const x=bySlug(articles,parts[1]);if(x){title=x.title;description=x.excerpt}}
+  else if(parts[0]==='event'){const x=bySlug(events,parts[1]);if(x){title=x.title;description=x.summary}}
+  else if(parts[0]==='opportunity'){const x=bySlug(opportunities,parts[1]);if(x){title=x.title;description=x.description}}
+  const isCms=r.startsWith('#/cms');
+  if(isCms){title='CMS Demo';description='KPCG administrative prototype for structured content, workflow, media, governance and analytics.'}
+  const fullTitle=title.includes('KPCG')||title==='Kenya Platform for Climate Governance'?title:`${title} — KPCG`;
+  const path=r==='#/home'||r==='#/'?'':r.replace(/^#\//,'');
+  const url=base+'/'+path;
+  const setMeta=(attribute,key,value)=>{let el=document.head.querySelector(`meta[${attribute}="${key}"]`);if(!el){el=document.createElement('meta');el.setAttribute(attribute,key);document.head.append(el)}el.content=value};
+  document.title=fullTitle;
+  setMeta('name','description',description);
+  setMeta('name','robots',isCms?'noindex,nofollow':'index,follow');
+  setMeta('property','og:title',fullTitle);
+  setMeta('property','og:description',description);
+  setMeta('property','og:url',url);
+  setMeta('property','og:image',socialImage);
+  setMeta('property','og:image:secure_url',socialImage);
+  setMeta('property','og:image:alt','KPCG — climate governance that connects people, evidence and action');
+  setMeta('name','twitter:title',fullTitle);
+  setMeta('name','twitter:description',description);
+  setMeta('name','twitter:image',socialImage);
+  setMeta('name','twitter:image:alt','KPCG — climate governance that connects people, evidence and action');
+  let canonical=document.head.querySelector('link[rel="canonical"]');
+  if(!canonical){canonical=document.createElement('link');canonical.rel='canonical';document.head.append(canonical)}
+  canonical.href=url;
+}
 
 function render(){document.body.classList.toggle('reduce-motion',state.reduced);$('#offlineBanner').classList.toggle('show',state.offline);const app=$('#app');app.innerHTML=state.loading?loadingMarkup():routeView();$('#menuDrawerBody').innerHTML=menuHTML();$('#searchDrawerBody').innerHTML=searchDrawerHTML();renderDemo();updatePageMeta();requestAnimationFrame(()=>{initReveal();initCounters();$('#main')?.focus({preventScroll:true})});window.scrollTo({top:0,behavior:'auto'})}
 function renderDemo(){$('#demoPanel').innerHTML=`<h2>Prototype controls</h2><div class="demo-row"><span>Experience</span><button class="btn small ghost" data-demo-experience>${state.route.startsWith('#/cms')?'Go Public':'Open CMS'}</button></div><div class="demo-row"><label for="demoRole">Demo role</label><select id="demoRole" style="width:165px;min-height:38px">${Object.keys(roles).map(r=>`<option ${r===state.role?'selected':''}>${r}</option>`).join('')}</select></div><div class="demo-row"><span>Offline mode</span><button class="switch ${state.offline?'on':''}" data-demo-offline aria-pressed="${state.offline}"><span></span></button></div><div class="demo-row"><span>Reduced motion</span><button class="switch ${state.reduced?'on':''}" data-demo-reduced aria-pressed="${state.reduced}"><span></span></button></div><div class="demo-row"><span>Loading state</span><button class="btn small ghost" data-demo-loading>Simulate</button></div><div class="demo-row"><span>Notification</span><button class="btn small ghost" data-demo-toast>Show</button></div><div class="demo-row"><span>Session</span><button class="btn small ghost" data-demo-expire>Expire</button></div><div class="demo-row"><span>Prototype state</span><button class="btn small danger" data-demo-reset>Reset</button></div>`}

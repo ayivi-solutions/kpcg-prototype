@@ -5,14 +5,16 @@
   "description": "KPCG public prototype: consolidated source-visible application deployed with Cloudflare Workers Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
+    "social:generate": "node scripts/generate-social-pages.mjs",
+    "social:check": "node scripts/generate-social-pages.mjs --check",
     "acceptance": "node scripts/acceptance-smoke.mjs",
     "acceptance:assets": "node scripts/acceptance-smoke.mjs --strict-assets",
     "test": "npm run acceptance",
-    "predeploy": "npm run acceptance",
+    "predeploy": "npm run social:check && npm run acceptance",
     "deploy": "wrangler deploy",
     "deploy:dry": "wrangler deploy --dry-run",
-    "verify": "npm run acceptance && npm run deploy:dry",
-    "verify:strict": "npm run acceptance:assets && npm run deploy:dry"
+    "verify": "npm run social:check && npm run acceptance && npm run deploy:dry",
+    "verify:strict": "npm run social:check && npm run acceptance:assets && npm run deploy:dry"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

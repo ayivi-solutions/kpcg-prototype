@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://kpcg.ayivisolutions.com/</loc>
-    <lastmod>2026-09-12</lastmod>
-    <changefreq>weekly</changefreq>
-  </url>
+  <url><loc>https://kpcg.ayivisolutions.com/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/about/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/governance/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/where-we-work/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/themes/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/programmes/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/policy/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/knowledge/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/news/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/events/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/multimedia/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/membership/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/members/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/opportunities/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/engage/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/privacy/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/terms/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://kpcg.ayivisolutions.com/accessibility/</loc><changefreq>weekly</changefreq></url>
 </urlset>
