@@ -55,6 +55,7 @@ try{
     const response=await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
     if(!response||response.status()!==200)throw new Error(`${profile.name}: root ${response?.status()??'no response'}`);
     await page.waitForFunction(()=>Boolean(document.querySelector('nav,[role="navigation"]'))&&(document.body?.innerText||'').length>500,null,{timeout:30000});
+    await page.waitForFunction(()=>!document.querySelector('[data-prerendered-home]')&&document.querySelectorAll('[data-v16-hero-slide]').length>=12&&document.querySelectorAll('[data-v16-slide]').length>=12,null,{timeout:15000});
 
     const home=await page.evaluate(()=>({
       hash:location.hash,
