@@ -72,6 +72,7 @@ try{
     const targetIndex=Math.min(4,home.heroSlides-1);
     await page.click(`[data-v16-slide="${targetIndex}"]`);
     await page.waitForFunction(i=>document.querySelector(`[data-v16-hero-slide="${i}"]`)?.classList.contains('active'),targetIndex,{timeout:5000});
+    await page.waitForFunction(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return Boolean(img?.getAttribute('src'))&&!img?.getAttribute('data-src')&&img.complete&&img.naturalWidth>0;},targetIndex,{timeout:10000});
     const heroTransition=await page.evaluate(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return {src:img?.getAttribute('src')||'',dataSrc:img?.getAttribute('data-src')||'',naturalWidth:img?.naturalWidth||0};},targetIndex);
     if(!heroTransition.src||heroTransition.dataSrc||heroTransition.naturalWidth===0)throw new Error(`${profile.name}: lazy hero slide did not load ${JSON.stringify(heroTransition)}`);
 
