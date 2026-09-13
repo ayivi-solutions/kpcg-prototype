@@ -1,81 +1,93 @@
-# KPCG Digital Platform Prototype
+# KPCG Digital Platform — Public Prototype
 
-Executive prototype for the **Kenya Platform for Climate Governance (KPCG)**.
+This repository contains AYIVI Systems Limited's public prototype for the **Kenya Platform for Climate Governance (KPCG)**. It demonstrates the proposed public experience, information architecture, county discovery model, editorial workflows and interaction direction at:
 
-## Production target
+`https://kpcg.ayivisolutions.com`
 
-- Deployment platform: **Cloudflare Workers** with Static Assets — not Cloudflare Pages.
-- GitHub repository: `ayivi-solutions/kpcg-prototype`
-- Custom domain: `https://kpcg.ayivisolutions.com`
-- Application entry: `public/index.html`
-- Accepted experience line: **v16**, hardened as the **v16.1 acceptance baseline**.
-- Validated fallback line: **v15**; stable core fallback remains **v13**.
+## What evaluators can review
 
-## Administrative Kenya map
+- Responsive, mobile-first public climate-governance experience.
+- Interactive exploration of Kenya's 47 counties, with an equivalent county list and keyboard-operable county map.
+- Relationships between counties, thematic priorities, programmes and projects, policy and advocacy, evidence resources, news, events, multimedia, membership and opportunities.
+- A rotating homepage hero using a broad set of KPCG-owned photographs, with additional real KPCG media distributed across News, Knowledge and Multimedia rather than repeatedly reusing the same small image set.
+- Progressive Web App behaviour, service-worker caching, resilient navigation and automated desktop/mobile browser checks.
+- Meaningful homepage content and social-preview metadata directly in the root HTML source for crawlers, link previews and non-JavaScript inspection.
 
-The public platform uses the supplied **geoBoundaries Kenya ADM1** administrative boundary geometry for the 47 counties. County polygons are embedded into the prototype and are interactive, keyboard accessible, drillable, zoomable, and backed by the equivalent county list. Activity counts and content relationships remain explicitly illustrative prototype data.
+### Editorial workflow demonstration
 
-## Local development
+The prototype includes a simulated editorial workspace that demonstrates content creation, media handling, taxonomy, submissions, curation, users/roles, SEO, audit and analytics interactions.
+
+Open it directly at:
+
+`https://kpcg.ayivisolutions.com/#/cms/login`
+
+This is a **workflow demonstrator**, not a claim that the public prototype itself is already running the production Payload CMS/PostgreSQL backend.
+
+## Prototype deployment versus production commitment
+
+The public prototype is deliberately lightweight so KPCG/PACJA evaluators can inspect it quickly and reliably. It is deployed as a **consolidated static application through Cloudflare Workers with Static Assets**.
+
+The production implementation committed in AYIVI's Technical Proposal remains **Next.js, React and TypeScript with server rendering, Payload CMS 3.x, PostgreSQL and the associated Node.js services, security controls, publishing workflows and integrations**.
+
+To make that production commitment concrete rather than merely descriptive, this repository includes an executable-reference scaffold under [`production-reference/`](production-reference/) containing:
+
+- Next.js App Router / Server Component structure;
+- Payload CMS 3.x configuration;
+- PostgreSQL adapter configuration;
+- authenticated users and roles;
+- media management;
+- draft/version/scheduled-publishing configuration;
+- published-only public access; and
+- a server-rendered homepage query against Payload content.
+
+The production reference is automatically checked by the acceptance workflow so the public prototype and the proposed production architecture cannot silently drift apart.
+
+## Current prototype runtime
+
+The current prototype is maintained as a **single consolidated application document** at `public/index.html`. Historical prototype iterations remain available through Git history, but the deployed application no longer reconstructs or applies a chain of runtime patches.
+
+The root document contains semantic homepage content before client-side enhancement, including primary navigation, the main heading, introductory copy and a representative KPCG image. A crawler, link-preview service, accessibility scanner or evaluator using View Source therefore sees meaningful platform content without needing the application JavaScript to execute first.
+
+## Accessibility and performance
+
+The prototype includes:
+
+- keyboard-operable county shapes and administrative-centre markers;
+- an equivalent text/list route for county exploration;
+- semantic navigation and landmark structure;
+- reduced-motion handling for animated experiences;
+- responsive layouts for desktop and mobile;
+- lazy loading of non-initial hero slides; and
+- automated browser QA covering desktop, mobile, hero transitions, route rendering, service-worker behaviour and keyboard activation of the county map.
+
+The acceptance workflow also runs a **mobile Lighthouse audit** and enforces minimum performance, accessibility, best-practices and SEO scores before the release is accepted.
+
+## Data and media integrity
+
+KPCG-owned photographs supplied for the prototype are treated as documentary KPCG media and may be used throughout the public experience. The release pipeline performs content-level duplicate detection so identical photographs downloaded under different Facebook filenames do not repeatedly appear across major sections.
+
+Unless explicitly identified as verified client material, programme counts, member counts, policy records, opportunities, event details, resource metadata and impact-style values remain illustrative prototype content and must not be interpreted as confirmed KPCG results.
+
+Leadership portraits remain placeholders until each person's identity can be verified against the corresponding KPCG role.
+
+## Local review
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Acceptance and release safety
-
-Before any deployment, reconstruct and validate the complete application chain:
-
-```bash
-npm run acceptance
-```
-
-The blocking acceptance gate verifies required release assets, reconstructs the compressed base application, applies v11, v12, v13, validated v15 and v16 in sequence, rejects malformed or unexpectedly truncated output, and verifies the v16.1 cache contract and PWA metadata. It also reports any public visual assets that remain below the quality floor without allowing that P1 visual issue to block P0 runtime hardening.
-
-The strict visual-asset gate is separate and remains blocking until all sixteen public visual assets meet the release floor:
+Run the consolidated release checks with:
 
 ```bash
 npm run acceptance:assets
-```
-
-For the full pre-deployment verification pass:
-
-```bash
-npm run verify
-```
-
-For strict runtime plus visual-asset verification:
-
-```bash
 npm run verify:strict
 ```
 
-`npm run deploy` is protected by the blocking `predeploy` runtime acceptance gate. GitHub also runs the same reconstruction check on pushes to `main`, the v16.1 hardening branch, and pull requests targeting `main`.
+## Deployment
 
-## Runtime hardening
+The public prototype is deployed from `main` through **Cloudflare Workers with Static Assets** using the repository's Wrangler configuration. The custom review domain is:
 
-`public/index.html` uses bounded network requests and validates the document after each major patch stage. A failed v16 transform preserves v15; a failed v15 transform preserves the previous stable interface. The final document is validated before it can replace the loader, preventing a successful-but-empty transform from recreating the earlier blank-screen failure mode.
+`https://kpcg.ayivisolutions.com`
 
-The service worker uses a release-specific cache and network-first handling for release-critical application fragments and public assets so clients do not assemble mixed versions from stale cache entries.
-
-## Cloudflare Workers deployment
-
-This repository is intended for **Cloudflare's direct Git integration / Workers Builds**. No Cloudflare API secrets are required in GitHub for the direct integration path.
-
-In Cloudflare, connect/import `ayivi-solutions/kpcg-prototype`, use branch `main`, and let Cloudflare build/deploy the Worker from the repository configuration.
-
-Recommended deploy command:
-
-```bash
-npm install && npm run deploy
-```
-
-`wrangler.jsonc` configures Worker Static Assets with SPA fallback and the custom domain `kpcg.ayivisolutions.com`.
-
-## Domain note
-
-The Wrangler configuration uses a Worker **Custom Domain**. Cloudflare can create/manage the Worker DNS record and certificate when `ayivisolutions.com` is an active Cloudflare zone and the hostname is available. If `kpcg.ayivisolutions.com` already has a conflicting DNS record, reconcile it before the first Worker deployment.
-
-## Prototype data integrity
-
-Unless explicitly identified as verified client material, programme counts, member counts, policy records, events, opportunities, resources and impact-style values are prototype/illustrative data and must not be represented as verified KPCG achievements. Generated demonstration imagery is illustrative and must not be represented as documentary evidence of actual KPCG events, personnel or programme delivery.
+The public prototype deployment choice should not be confused with the proposed production application stack described above.

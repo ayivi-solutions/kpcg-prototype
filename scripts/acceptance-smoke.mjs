@@ -1,7 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
-import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
@@ -9,187 +7,104 @@ const __filename=fileURLToPath(import.meta.url);
 const __dirname=path.dirname(__filename);
 const root=path.resolve(__dirname,'..');
 const publicDir=path.join(root,'public');
-const read=relative=>fs.readFileSync(path.join(publicDir,relative),'utf8').trim();
+const htmlPath=path.join(publicDir,'index.html');
 const strictAssets=process.argv.includes('--strict-assets');
 const emitArtifacts=process.argv.includes('--emit-artifacts');
 const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||process.env.GITHUB_SHA||'unknown';
-const artifactDir=path.join(root,'artifacts');
-const finalArtifactPath=path.join(artifactDir,'kpcg-v16.2-final.html');
-const summaryArtifactPath=path.join(artifactDir,'acceptance-summary.json');
-const assetQualityFloorBytes=40000;
-const serviceWorkerRelease='kpcg-v16.2-20260912';
+const release='v17.0';
+const serviceWorkerRelease='kpcg-v17.0-20260913';
+const qualityFloorBytes=40000;
+const fail=message=>{throw new Error(message)};
+const html=fs.readFileSync(htmlPath,'utf8');
 
-const gunzipB64=encoded=>zlib.gunzipSync(Buffer.from(encoded.replace(/\s+/g,''),'base64')).toString('utf8');
+if(fs.existsSync(path.join(publicDir,'app')))fail('Legacy runtime patch directory public/app must not exist in v17.');
+for(const marker of ['data-release="v17.0"','data-prerendered-home','Kenya Platform for Climate Governance','property="og:title"','property="og:image"','twitter:card','Preview publishing workflow']){
+  if(!html.includes(marker))fail(`Missing consolidated source marker: ${marker}`);
+}
+for(const legacy of ['KPCGApplyExperiencePatchV16','/app/part-','patch-v16-','Loading the interactive platform','featured-locally-led-action.webp','media-01-county-dialogue.webp']){
+  if(html.includes(legacy))fail(`Retired runtime/illustrative marker remains: ${legacy}`);
+}
+if(!/<nav\b[\s\S]*?#\/where-we-work/i.test(html))fail('Source-visible navigation is missing.');
+if(!/<h1[^>]*>[^<]*Climate governance/i.test(html))fail('Source-visible hero heading is missing.');
 
-const validateHtml=(candidate,previous,label)=>{
-  if(typeof candidate!=='string')throw new Error(`${label}: non-string document`);
-  const html=candidate.trim();
-  const previousLength=typeof previous==='string'?previous.length:0;
-  const minLength=Math.max(12000,previousLength?Math.floor(previousLength*.55):0);
-  if(html.length<minLength)throw new Error(`${label}: unexpectedly small document (${html.length} chars; minimum ${minLength})`);
-  if(!/<(?:!doctype|html|body)\b/i.test(html))throw new Error(`${label}: missing document markup`);
-  if(!/(KPCG|Kenya Platform for Climate Governance)/i.test(html))throw new Error(`${label}: missing KPCG identity`);
-  if(!/(<main\b|id=["'](?:app|root)["']|data-page=|class=["'][^"']*(?:app|shell|page))/i.test(html))throw new Error(`${label}: missing application shell sentinel`);
-  return candidate;
+const extractJsonArray=name=>{
+  const match=html.match(new RegExp(`const ${name}=(\\[[^;]+\\]);`));
+  if(!match)fail(`Could not locate ${name}`);
+  return JSON.parse(match[1]);
 };
+const hero=extractJsonArray('v16Media').map(item=>item.image);
+const article=extractJsonArray('xpArticleImages');
+const story=extractJsonArray('storyImages');
+const resources=extractJsonArray('resourceImages');
+const gallery=extractJsonArray('v17OfficialGalleryImages');
+const themeMatch=html.match(/<article class="v16-theme-feature"><img src="([^"]+)"/);
+if(!themeMatch)fail('Theme feature image not found.');
+const theme=[themeMatch[1]];
+const newsFeatureMatch=html.match(/editorial-feature[\s\S]{0,400}?<img src="([^"]+)"/);
+if(!newsFeatureMatch)fail('News feature image not found.');
+const newsFeature=[newsFeatureMatch[1]];
+const semanticReal=[...new Set([...html.matchAll(/\/assets\/real\/[A-Za-z0-9_.-]+\.jpg/g)].map(m=>m[0]))];
 
-const evaluatePatch=(files,fnName,label)=>{
-  const encoded=files.map(read).join('');
-  const source=gunzipB64(encoded);
-  const sandbox={console,window:{},globalThis:null,setTimeout,clearTimeout};
-  sandbox.globalThis=sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(source,sandbox,{filename:`${label}.js`,timeout:5000});
-  const fn=sandbox.window?.[fnName] ?? sandbox[fnName];
-  if(typeof fn!=='function')throw new Error(`${label}: expected ${fnName} to be exported`);
-  return fn;
-};
+if(hero.length<12)fail(`Hero requires at least 12 real images; found ${hero.length}.`);
+if(new Set(hero).size!==hero.length)fail('Hero contains duplicate image paths.');
+if(article.length<20)fail(`Article pool is too small: ${article.length}.`);
+if(resources.length<10)fail(`Resource pool is too small: ${resources.length}.`);
+if(gallery.length<100)fail(`Multimedia/Gallery pool must contain at least 100 distinct official images; found ${gallery.length}.`);
+if(new Set(gallery).size!==gallery.length)fail('Multimedia/Gallery contains duplicate paths.');
 
-const apply=(html,files,fnName,label)=>{
-  const fn=evaluatePatch(files,fnName,label);
-  return validateHtml(fn(html),html,label);
-};
-
-const expectedFiles=[
-  'index.html','manifest.webmanifest','sw.js','assets/kpcg-logo.webp',
-  'app/part-01.txt','app/part-02.txt','app/part-03.txt','app/part-04.txt','app/part-05.txt',
-  'app/patch-v11.txt','app/patch-v12.txt','app/patch-v13.txt',
-  'app/patch-v15-01.txt','app/patch-v15-02.txt','app/patch-v15-03.txt','app/patch-v15-04.txt',
-  'app/patch-v16-01.txt','app/patch-v16-02.txt','app/patch-v16-2-real-imagery.txt'
-];
-for(const relative of expectedFiles){
-  const full=path.join(publicDir,relative);
-  if(!fs.existsSync(full))throw new Error(`Missing required release asset: ${relative}`);
-  if(fs.statSync(full).size===0)throw new Error(`Empty required release asset: ${relative}`);
+const primaryPools={hero,article,story,resources,theme,newsFeature};
+const ownership=new Map();
+for(const [pool,images] of Object.entries(primaryPools)){
+  for(const image of images){
+    if(!image.startsWith('/assets/kpcg_images_'))fail(`${pool} uses a non-KPCG raw image: ${image}`);
+    if(ownership.has(image))fail(`Cross-section image repetition: ${image} appears in ${ownership.get(image)} and ${pool}`);
+    ownership.set(image,pool);
+  }
+}
+for(const image of gallery){
+  if(ownership.has(image))fail(`Gallery repeats a section-specific image: ${image} (${ownership.get(image)}).`);
+  ownership.set(image,'gallery');
+}
+for(const image of semanticReal){
+  if(ownership.has(image))fail(`Semantic media path repeats another pool: ${image}.`);
+  ownership.set(image,'semantic-media');
 }
 
-const visualAssets=[
-  'assets/leader-governance.webp','assets/leader-programme.webp','assets/leader-secretariat.webp',
-  'assets/real/featured-community-tree-action.jpg',
-  'assets/real/county-dialogue-community.jpg',
-  'assets/real/community-tree-planting.jpg',
-  'assets/real/media-interview-kpcg-01.jpg',
-  'assets/real/ccde-action-plan.jpg',
-  'assets/real/community-consultation.jpg',
-  'assets/real/tree-planting-community.jpg',
-  'assets/real/media-interview-kpcg-02.jpg',
-  'assets/real/climate-finance-tracking.jpg',
-  'assets/real/stakeholder-workshop.jpg',
-  'assets/real/school-seedlings.jpg',
-  'assets/real/media-interview-tv.jpg',
-  'assets/real/indigenous-climate-study.jpg'
-];
-const visualAssetResults=[];
-const thumbnailGrade=[];
-for(const relative of visualAssets){
-  const full=path.join(publicDir,relative);
-  if(!fs.existsSync(full))throw new Error(`Missing public visual asset: ${relative}`);
+const assetResults=[];
+const contentHashes=new Map();
+for(const [image,pool] of ownership){
+  const full=path.join(publicDir,image.replace(/^\//,''));
+  if(!fs.existsSync(full))fail(`Missing ${pool} image: ${image}`);
   const bytes=fs.statSync(full).size;
-  const passed=bytes>=assetQualityFloorBytes;
-  visualAssetResults.push({path:relative,bytes,passed});
-  if(!passed)thumbnailGrade.push(`${relative} (${bytes} bytes)`);
-}
-if(thumbnailGrade.length){
-  const message=`${thumbnailGrade.length} public visual assets remain below the ${assetQualityFloorBytes.toLocaleString()} byte acceptance floor:\n- ${thumbnailGrade.join('\n- ')}`;
-  if(strictAssets)throw new Error(message);
-  console.warn(`WARN ${message}`);
-}else{
-  console.log(`PASS public visual asset quality floor: ${visualAssets.length} runtime assets`);
+  const fileBytes=fs.readFileSync(full);
+  const sha256=crypto.createHash('sha256').update(fileBytes).digest('hex');
+  const existing=contentHashes.get(sha256);
+  if(existing)fail(`Visual duplicate by content: ${image} (${pool}) is identical to ${existing.image} (${existing.pool}).`);
+  contentHashes.set(sha256,{image,pool});
+  const passed=bytes>=qualityFloorBytes;
+  assetResults.push({path:image,pool,bytes,sha256,passed});
+  if(strictAssets&&!passed)fail(`${image} is below the ${qualityFloorBytes}-byte quality floor (${bytes}).`);
 }
 
-const index=read('index.html');
-for(const marker of ['patch-v13.txt?v=13','patch-v15-04.txt?v=15','patch-v16-02.txt?v=16','patch-v16-2-real-imagery.txt?v=162','KPCGApplyExperiencePatchV16','KPCGApplyRealImageryV162','FETCH_TIMEOUT_MS','validateHtml']){
-  if(!index.includes(marker))throw new Error(`Loader is missing required release marker: ${marker}`);
-}
+if(!html.includes('data-src="${s.image}"'))fail('Hero lazy-load markup is missing.');
+if(!html.includes('load((i+1)%slides.length)'))fail('Hero next-slide preloading is missing.');
+const manifest=JSON.parse(fs.readFileSync(path.join(publicDir,'manifest.webmanifest'),'utf8'));
+if(manifest.start_url!=='/#/home')fail(`Unexpected manifest start_url: ${manifest.start_url}`);
+const sw=fs.readFileSync(path.join(publicDir,'sw.js'),'utf8');
+if(!sw.includes(serviceWorkerRelease))fail(`Service worker release is not ${serviceWorkerRelease}.`);
+if(/\/app\//.test(sw))fail('Service worker still references legacy /app/ fragments.');
 
-let html=gunzipB64(['app/part-01.txt','app/part-02.txt','app/part-03.txt','app/part-04.txt','app/part-05.txt'].map(read).join(''));
-html=validateHtml(html,null,'base application');
-const stages=[
-  [['app/patch-v11.txt'],'KPCGApplyPatch','v11 interface'],
-  [['app/patch-v12.txt'],'KPCGApplyImagePatch','v12 imagery'],
-  [['app/patch-v13.txt'],'KPCGApplyPatchV13','v13 acceptance'],
-  [['app/patch-v15-01.txt','app/patch-v15-02.txt','app/patch-v15-03.txt','app/patch-v15-04.txt'],'KPCGApplyExperienceRedesignV15','v15 validated experience'],
-  [['app/patch-v16-01.txt','app/patch-v16-02.txt'],'KPCGApplyExperiencePatchV16','v16 public experience'],
-  [['app/patch-v16-2-real-imagery.txt'],'KPCGApplyRealImageryV162','v16.2 verified KPCG imagery']
-];
-const appliedStages=[];
-for(const [files,fn,label] of stages){
-  html=apply(html,files,fn,label);
-  appliedStages.push({label,fn,files,characters:html.length,bytes:Buffer.byteLength(html,'utf8')});
-  console.log(`PASS ${label}: ${html.length.toLocaleString()} chars`);
-}
-
-const legacyIllustrativeRuntimeAssets=[
-  '/assets/featured-locally-led-action.webp',
-  '/assets/media-01-county-dialogue.webp','/assets/media-02-community-adaptation.webp','/assets/media-03-governance-interview.webp','/assets/media-04-evidence-cover.webp',
-  '/assets/media-05-county-dialogue.webp','/assets/media-06-community-adaptation.webp','/assets/media-07-governance-interview.webp','/assets/media-08-evidence-cover.webp',
-  '/assets/media-09-county-dialogue.webp','/assets/media-10-community-adaptation.webp','/assets/media-11-governance-interview.webp','/assets/media-12-evidence-cover.webp'
-];
-const stillReferenced=legacyIllustrativeRuntimeAssets.filter(asset=>html.includes(asset));
-if(stillReferenced.length)throw new Error(`Legacy illustrative runtime imagery is still referenced:\n- ${stillReferenced.join('\n- ')}`);
-for(const asset of visualAssets.filter(asset=>asset.startsWith('assets/real/'))){
-  if(!html.includes(`/${asset}`))throw new Error(`Verified KPCG image is not referenced by the reconstructed runtime: ${asset}`);
-}
-
-const sw=read('sw.js');
-if(!sw.includes(serviceWorkerRelease))throw new Error(`Service worker cache release is not ${serviceWorkerRelease}`);
-for(const marker of ['patch-v13.txt?v=13','patch-v15-04.txt?v=15','patch-v16-02.txt?v=16','patch-v16-2-real-imagery.txt?v=162']){
-  if(!sw.includes(marker))throw new Error(`Service worker does not cache release asset ${marker}`);
-}
-
-let manifest;
-try{
-  manifest=JSON.parse(read('manifest.webmanifest'));
-}catch(error){
-  throw new Error(`Manifest is invalid JSON: ${error.message}`);
-}
-if(manifest.start_url!=='/#/home')throw new Error(`Unexpected manifest start_url: ${manifest.start_url}`);
-if(!Array.isArray(manifest.icons)||manifest.icons.length===0)throw new Error('Manifest has no install icon');
+const sourceImagePaths=[...new Set([...html.matchAll(/(\/assets\/(?:kpcg_images_v[12]\/[A-Za-z0-9_.-]+\.jpg|real\/[A-Za-z0-9_.-]+\.jpg))/g)].map(m=>m[1]))];
+if(sourceImagePaths.length<140)fail(`Source image diversity is too low: ${sourceImagePaths.length} unique official/real images.`);
+const finalBytes=Buffer.byteLength(html,'utf8');
+const htmlSha256=crypto.createHash('sha256').update(html).digest('hex');
+if(finalBytes<300000)fail(`Consolidated document unexpectedly small: ${finalBytes} bytes.`);
 
 if(emitArtifacts){
+  const artifactDir=path.join(root,'artifacts');
   fs.mkdirSync(artifactDir,{recursive:true});
-  fs.writeFileSync(finalArtifactPath,html,'utf8');
-  const finalHtmlBytes=Buffer.byteLength(html,'utf8');
-  const finalHtmlSha256=crypto.createHash('sha256').update(html,'utf8').digest('hex');
-  const hashRoutes=[...new Set([...html.matchAll(/#\/[A-Za-z0-9_?=&/.-]+/g)].map(match=>match[0]))].sort();
-  const headings=[...html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)]
-    .map(match=>match[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim())
-    .filter(Boolean);
-  const summary={
-    release:'v16.2',
-    acceptedBaselineCandidate:true,
-    generatedAt:new Date().toISOString(),
-    commitSha,
-    finalArtifact:'artifacts/kpcg-v16.2-final.html',
-    finalHtmlCharacters:html.length,
-    finalHtmlBytes,
-    finalHtmlSha256,
-    patchStagesApplied:appliedStages,
-    serviceWorker:{release:serviceWorkerRelease,validated:true},
-    manifestValidation:{validated:true,startUrl:manifest.start_url,iconCount:manifest.icons.length},
-    assetQuality:{
-      validated:true,
-      strictMode:strictAssets,
-      passed:thumbnailGrade.length===0,
-      qualityFloorBytes:assetQualityFloorBytes,
-      checkedAssets:visualAssets.length,
-      thumbnailGradeWarnings:thumbnailGrade,
-      assets:visualAssetResults
-    },
-    imageryMigration:{verifiedRealAssets:13,legacyIllustrativeRuntimeReferences:stillReferenced},
-    hashRoutes,
-    headingCount:headings.length,
-    headings,
-    integrityWarnings:{
-      hasIllustrativeLanguage:/illustrative/i.test(html),
-      hasPrototypeLanguage:/prototype/i.test(html),
-      hasDemoLanguage:/\bdemo(?:nstration)?\b/i.test(html)
-    }
-  };
-  fs.writeFileSync(summaryArtifactPath,`${JSON.stringify(summary,null,2)}\n`,'utf8');
-  console.log(`PASS emitted ${path.relative(root,finalArtifactPath)} (${finalHtmlBytes.toLocaleString()} bytes)`);
-  console.log(`PASS emitted ${path.relative(root,summaryArtifactPath)} for commit ${commitSha}`);
+  fs.writeFileSync(path.join(artifactDir,'kpcg-v17-final.html'),html,'utf8');
+  const summary={release,commitSha,architecture:'single consolidated source-visible application document',runtimePatchChain:false,sourceVisibleContent:true,finalHtmlBytes:finalBytes,finalHtmlSha256:htmlSha256,hero:{count:hero.length,unique:new Set(hero).size,eagerCount:1,lazyCount:hero.length-1},imagePools:{article:article.length,story:story.length,resources:resources.length,theme:theme.length,newsFeature:newsFeature.length,gallery:gallery.length,semanticMedia:semanticReal.length,totalActive:ownership.size},visualContentHashesUnique:contentHashes.size===ownership.size,sourceImageDiversity:sourceImagePaths.length,assetQuality:{strict:strictAssets,floorBytes:qualityFloorBytes,checked:assetResults.length,passed:assetResults.every(a=>a.passed),assets:assetResults},manifest:{startUrl:manifest.start_url},serviceWorker:{release:serviceWorkerRelease},generatedAt:new Date().toISOString()};
+  fs.writeFileSync(path.join(artifactDir,'acceptance-summary.json'),JSON.stringify(summary,null,2)+'\n');
 }
-
-console.log(`PASS final v16.2 acceptance document: ${html.length.toLocaleString()} chars (${Buffer.byteLength(html,'utf8').toLocaleString()} bytes)`);
-console.log(`KPCG v16.2 ${strictAssets?'strict ':' '}acceptance smoke test passed.`);
+console.log(`PASS KPCG ${release}: consolidated source; ${hero.length} hero slides; ${gallery.length} gallery images; ${ownership.size} active images unique by content.`);

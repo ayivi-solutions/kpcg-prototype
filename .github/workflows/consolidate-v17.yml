@@ -1,0 +1,52 @@
+name: Consolidate KPCG v17 Baseline
+
+on:
+  push:
+    branches:
+      - remediation-v17-single-baseline
+    paths:
+      - scripts/consolidate-release.mjs
+      - .github/workflows/consolidate-v17.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: remediation-v17-single-baseline
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build consolidated v17 application
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d public/app
+          node scripts/consolidate-release.mjs
+          grep -q 'data-release="v17.0"' public/index.html
+          grep -q 'data-prerendered-home' public/index.html
+          test "$(grep -o '/assets/kpcg_images_[^\"'"'"' ]*\.jpg' public/index.html | sort -u | wc -l)" -ge 40
+
+      - name: Retire runtime patch directory
+        run: rm -rf public/app
+
+      - name: Commit consolidated baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/index.html public/app
+          git commit -m 'Collapse KPCG runtime into v17 consolidated baseline'
+          git push origin HEAD:remediation-v17-single-baseline
