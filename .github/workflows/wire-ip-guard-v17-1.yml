@@ -1,0 +1,45 @@
+name: Wire KPCG v17.1 IP Guard
+
+on:
+  push:
+    branches:
+      - hardening-v17-1-ip-guardrails
+    paths:
+      - '.github/workflows/wire-ip-guard-v17-1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hardening-v17-1-ip-guardrails
+          fetch-depth: 0
+      - name: Attach proprietary browser guard to consolidated document
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/index.html')
+          s=p.read_text()
+          if '/ip-guard.js' in s or '/ip-guard.css' in s:
+              raise SystemExit('IP guard already wired')
+          injection='''\n<meta name="copyright" content="© 2026 AYIVI Systems Limited. Proprietary evaluation prototype. All rights reserved.">\n<link rel="stylesheet" href="/ip-guard.css?v=17.1">\n<script defer src="/ip-guard.js?v=17.1"></script>\n'''
+          if '</head>' not in s:
+              raise SystemExit('head close marker not found')
+          s=s.replace('</head>', injection+'</head>', 1)
+          p.write_text(s)
+          PY
+          grep -q '/ip-guard.js?v=17.1' public/index.html
+          grep -q '/ip-guard.css?v=17.1' public/index.html
+          grep -q 'AYIVI Systems Limited. Proprietary evaluation prototype' public/index.html
+      - name: Commit guard wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Wire AYIVI IP guard into v17.1 prototype'
+          git push origin HEAD:hardening-v17-1-ip-guardrails
