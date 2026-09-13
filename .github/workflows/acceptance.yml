@@ -30,6 +30,9 @@ jobs:
       - name: Install project tooling
         run: npm install --no-audit --no-fund
 
+      - name: Validate proposed production architecture reference
+        run: node scripts/validate-production-reference.mjs
+
       - name: Enforce official-media quality and visual uniqueness
         run: npm run acceptance:assets
 
