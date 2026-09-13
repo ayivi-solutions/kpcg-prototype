@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'v17.1-ipguard-20260913';
+  const VERSION = 'v18.0-ipguard-20260913';
   const ALLOWED_HOSTS = new Set(['kpcg.ayivisolutions.com', 'localhost', '127.0.0.1']);
   const host = String(location.hostname || '').toLowerCase();
   const authorized = ALLOWED_HOSTS.has(host);
@@ -58,8 +58,22 @@
     document.body.appendChild(el);
   };
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addWatermark, { once: true });
-  else addWatermark();
+  const loadEditorialRedesign = () => {
+    if (document.querySelector('script[data-kpcg-editorial-loader]')) return;
+    const script = document.createElement('script');
+    script.src = '/editorial-redesign-v3.js?v=18.0-20260913';
+    script.defer = true;
+    script.dataset.kpcgEditorialLoader = 'v18.0';
+    script.onerror = () => console.warn('KPCG editorial redesign layer did not load; base prototype remains available.');
+    document.head.appendChild(script);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { addWatermark(); loadEditorialRedesign(); }, { once: true });
+  } else {
+    addWatermark();
+    loadEditorialRedesign();
+  }
 
   console.info('%cAYIVI PROTECTED PROTOTYPE', 'font-weight:700;color:#0b5139', VERSION);
 })();
