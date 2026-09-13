@@ -8,7 +8,7 @@ const __dirname=path.dirname(__filename);
 const root=path.resolve(__dirname,'..');
 const artifactDir=path.join(root,'artifacts');
 const baseURL=(process.env.KPCG_PREVIEW_URL||'http://127.0.0.1:8787').replace(/\/$/,'');
-const expectedCache='kpcg-kpcg-v16.2-20260912';
+const expectedCache='kpcg-kpcg-v17.0-20260913';
 const outputPath=path.join(artifactDir,'service-worker-cache-summary.json');
 fs.mkdirSync(artifactDir,{recursive:true});
 
@@ -19,14 +19,8 @@ try{
   const page=await context.newPage();
   const response=await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
   if(!response||response.status()!==200)throw new Error(`root returned ${response?.status()??'no response'}`);
-  await page.waitForFunction(()=>Boolean(document.querySelector('nav,[role="navigation"]')),null,{timeout:30000});
-  const registration=await page.evaluate(async()=>{
-    const ready=await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker ready timeout')),15000))
-    ]);
-    return {scope:ready.scope,activeScript:ready.active?.scriptURL||null};
-  });
+  await page.waitForFunction(()=>document.documentElement.dataset.release==='v17.0'&&Boolean(document.querySelector('nav,[role="navigation"]')),null,{timeout:30000});
+  const registration=await page.evaluate(async()=>{const ready=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker ready timeout')),15000))]);return {scope:ready.scope,activeScript:ready.active?.scriptURL||null};});
   await page.reload({waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForFunction(()=>Boolean(navigator.serviceWorker?.controller),null,{timeout:15000});
   const cacheKeys=await page.evaluate(()=>caches.keys());
@@ -34,13 +28,8 @@ try{
   const expectedCachePresent=cacheKeys.includes(expectedCache);
   if(!expectedCachePresent)throw new Error(`expected service-worker cache is missing: ${expectedCache}`);
   if(staleCaches.length)throw new Error(`stale service-worker caches remain: ${staleCaches.join(', ')}`);
-  summary={release:'v16.2',baseURL,registration,expectedCache,cacheKeys,staleCaches,expectedCachePresent,passed:true};
+  summary={release:'v17.0',baseURL,registration,expectedCache,cacheKeys,staleCaches,expectedCachePresent,passed:true};
   await context.close();
-}catch(error){
-  summary={release:'v16.2',baseURL,expectedCache,passed:false,error:error.stack||error.message||String(error)};
-  process.exitCode=1;
-}finally{
-  await browser.close();
-}
-fs.writeFileSync(outputPath,`${JSON.stringify(summary,null,2)}\n`,'utf8');
-console.log(`${summary.passed?'PASS':'FAIL'} KPCG service-worker cache retirement: ${path.relative(root,outputPath)}`);
+}catch(error){summary={release:'v17.0',baseURL,expectedCache,passed:false,error:error.stack||String(error)};process.exitCode=1;}finally{await browser.close();}
+fs.writeFileSync(outputPath,JSON.stringify(summary,null,2)+'\n');
+console.log(`${summary.passed?'PASS':'FAIL'} KPCG v17 service-worker cache retirement: ${path.relative(root,outputPath)}`);
