@@ -1,81 +1,70 @@
-# KPCG Digital Platform Prototype
+# KPCG Digital Platform — Public Prototype
 
-Executive prototype for the **Kenya Platform for Climate Governance (KPCG)**.
+This repository contains AYIVI Systems Limited's public prototype for the **Kenya Platform for Climate Governance (KPCG)**. It is designed to demonstrate the proposed public experience, information architecture and interaction model at `https://kpcg.ayivisolutions.com`.
 
-## Production target
+## What the prototype demonstrates
 
-- Deployment platform: **Cloudflare Workers** with Static Assets — not Cloudflare Pages.
-- GitHub repository: `ayivi-solutions/kpcg-prototype`
-- Custom domain: `https://kpcg.ayivisolutions.com`
-- Application entry: `public/index.html`
-- Accepted experience line: **v16**, hardened as the **v16.1 acceptance baseline**.
-- Validated fallback line: **v15**; stable core fallback remains **v13**.
+- A responsive, mobile-first public climate-governance experience.
+- Interactive exploration of Kenya's 47 counties, with an equivalent county list and keyboard-operable county map.
+- Relationships between counties, thematic priorities, programmes and projects, policy and advocacy, evidence resources, news, events, multimedia, membership and opportunities.
+- Real KPCG-owned media integrated across the public experience, including a rotating multi-image homepage hero.
+- Progressive Web App behaviour, service-worker caching, resilient navigation and automated desktop/mobile browser checks.
+- Source-visible homepage content and social-preview metadata for crawlers, link unfurling and non-JavaScript inspection.
 
-## Administrative Kenya map
+## Prototype and proposed production architecture
 
-The public platform uses the supplied **geoBoundaries Kenya ADM1** administrative boundary geometry for the 47 counties. County polygons are embedded into the prototype and are interactive, keyboard accessible, drillable, zoomable, and backed by the equivalent county list. Activity counts and content relationships remain explicitly illustrative prototype data.
+This repository is a **public-facing prototype demonstrator**. Its deployment architecture is intentionally lightweight so evaluators can review the experience quickly and reliably.
 
-## Local development
+The prototype is deployed as a **consolidated static application through Cloudflare Workers with Static Assets**. It is **not** represented as the production CMS, database, security, workflow or integration implementation described in AYIVI's Technical Proposal.
+
+The proposed production implementation remains the architecture stated in the Technical Proposal, including **Next.js, React and TypeScript with server rendering, Payload CMS 3.x, PostgreSQL, and the associated Node.js services, publishing workflows and integration controls**.
+
+The distinction is deliberate: this repository demonstrates the user experience and functional direction; the Technical Proposal defines the production engineering commitment.
+
+## Current prototype runtime
+
+The current prototype is maintained as a **single consolidated application document** at `public/index.html`. Historical prototype iterations remain available through Git history, but the deployed application does not reconstruct or apply a chain of runtime patches.
+
+The public root document includes semantic homepage content before client-side enhancement, including primary navigation, the main heading, introductory copy and a representative KPCG image. This allows search crawlers, link-preview systems and source inspection to see meaningful content without executing the application JavaScript.
+
+## Accessibility and performance
+
+The prototype includes:
+
+- Keyboard-operable county shapes and administrative-centre markers.
+- An equivalent text/list route for county exploration.
+- Semantic navigation and landmark structure.
+- Reduced-motion handling for animated experiences.
+- Responsive layouts for desktop and mobile.
+- Lazy loading of non-initial hero slides so the expanded slideshow does not force all hero images into the initial network path.
+- Automated browser QA covering desktop, mobile, hero transitions, route rendering, service-worker behaviour and keyboard activation of the county map.
+
+## Data and media integrity
+
+KPCG-owned photographs supplied for the prototype are treated as documentary KPCG media and may be used throughout the public experience. The prototype deliberately rotates a larger pool of photographs to avoid excessive repetition.
+
+Unless explicitly identified as verified client material, programme counts, member counts, policy records, opportunities, event details, resource metadata and impact-style values remain illustrative prototype content and must not be interpreted as confirmed KPCG results.
+
+Leadership portraits remain placeholders until the identity of each person can be verified against the corresponding KPCG role.
+
+## Local review
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Acceptance and release safety
-
-Before any deployment, reconstruct and validate the complete application chain:
-
-```bash
-npm run acceptance
-```
-
-The blocking acceptance gate verifies required release assets, reconstructs the compressed base application, applies v11, v12, v13, validated v15 and v16 in sequence, rejects malformed or unexpectedly truncated output, and verifies the v16.1 cache contract and PWA metadata. It also reports any public visual assets that remain below the quality floor without allowing that P1 visual issue to block P0 runtime hardening.
-
-The strict visual-asset gate is separate and remains blocking until all sixteen public visual assets meet the release floor:
+Run the consolidated release checks with:
 
 ```bash
 npm run acceptance:assets
-```
-
-For the full pre-deployment verification pass:
-
-```bash
-npm run verify
-```
-
-For strict runtime plus visual-asset verification:
-
-```bash
 npm run verify:strict
 ```
 
-`npm run deploy` is protected by the blocking `predeploy` runtime acceptance gate. GitHub also runs the same reconstruction check on pushes to `main`, the v16.1 hardening branch, and pull requests targeting `main`.
+## Deployment
 
-## Runtime hardening
+The public prototype is deployed from `main` through **Cloudflare Workers with Static Assets** using the repository's Wrangler configuration. The custom review domain is:
 
-`public/index.html` uses bounded network requests and validates the document after each major patch stage. A failed v16 transform preserves v15; a failed v15 transform preserves the previous stable interface. The final document is validated before it can replace the loader, preventing a successful-but-empty transform from recreating the earlier blank-screen failure mode.
+`https://kpcg.ayivisolutions.com`
 
-The service worker uses a release-specific cache and network-first handling for release-critical application fragments and public assets so clients do not assemble mixed versions from stale cache entries.
-
-## Cloudflare Workers deployment
-
-This repository is intended for **Cloudflare's direct Git integration / Workers Builds**. No Cloudflare API secrets are required in GitHub for the direct integration path.
-
-In Cloudflare, connect/import `ayivi-solutions/kpcg-prototype`, use branch `main`, and let Cloudflare build/deploy the Worker from the repository configuration.
-
-Recommended deploy command:
-
-```bash
-npm install && npm run deploy
-```
-
-`wrangler.jsonc` configures Worker Static Assets with SPA fallback and the custom domain `kpcg.ayivisolutions.com`.
-
-## Domain note
-
-The Wrangler configuration uses a Worker **Custom Domain**. Cloudflare can create/manage the Worker DNS record and certificate when `ayivisolutions.com` is an active Cloudflare zone and the hostname is available. If `kpcg.ayivisolutions.com` already has a conflicting DNS record, reconcile it before the first Worker deployment.
-
-## Prototype data integrity
-
-Unless explicitly identified as verified client material, programme counts, member counts, policy records, events, opportunities, resources and impact-style values are prototype/illustrative data and must not be represented as verified KPCG achievements. Generated demonstration imagery is illustrative and must not be represented as documentary evidence of actual KPCG events, personnel or programme delivery.
+The public prototype deployment choice should not be confused with the proposed production application stack described above.
