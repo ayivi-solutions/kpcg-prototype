@@ -4,10 +4,7 @@ on:
   push:
     branches:
       - main
-      - acceptance-hardening-v16-1
-      - acceptance-qa-v16-1
-      - repair-v16-1-public-assets
-      - real-kpcg-imagery-v16-2
+      - remediation-v17-single-baseline
   pull_request:
     branches:
       - main
@@ -18,7 +15,7 @@ permissions:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       KPCG_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -28,26 +25,26 @@ jobs:
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.20.0
 
       - name: Install project tooling
         run: npm install --no-audit --no-fund
 
-      - name: Enforce strict public visual-asset quality
+      - name: Enforce official-media quality and visual uniqueness
         run: npm run acceptance:assets
 
       - name: Run strict release verification
         run: npm run verify:strict
 
-      - name: Emit reconstructed v16.2 acceptance artifacts
+      - name: Emit consolidated v17 acceptance artifacts
         run: node scripts/acceptance-smoke.mjs --strict-assets --emit-artifacts
 
-      - name: Install Playwright browser QA tooling
+      - name: Install browser QA tooling
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run desktop and mobile browser smoke against Wrangler preview
+      - name: Run desktop/mobile, keyboard-map and service-worker QA
         shell: bash
         run: |
           set -euo pipefail
@@ -70,11 +67,17 @@ jobs:
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
 
-      - name: Upload rendered acceptance and browser-QA artifacts
+          export CHROME_PATH="$(node -e "const {chromium}=require('playwright');process.stdout.write(chromium.executablePath())")"
+          npx --yes lighthouse@13.4.1 'http://127.0.0.1:8787/#/home' \
+            --output=json --output=html --output-path=artifacts/lighthouse-mobile \
+            --chrome-flags='--headless --no-sandbox' --quiet
+          node scripts/lighthouse-gate.mjs artifacts/lighthouse-mobile.report.json
+
+      - name: Upload v17 acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v16.2-acceptance-${{ github.run_id }}
+          name: kpcg-v17-acceptance-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30
@@ -83,7 +86,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       KPCG_COMMIT_SHA: ${{ github.sha }}
       KPCG_PRODUCTION_URL: https://kpcg.ayivisolutions.com
@@ -91,10 +94,10 @@ jobs:
       - name: Check out accepted main commit
         uses: actions/checkout@v4
 
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.20.0
 
       - name: Install browser QA tooling
         run: |
@@ -102,41 +105,50 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Wait for Cloudflare Git deployment to expose accepted release bytes
+      - name: Wait for Cloudflare to expose consolidated v17
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          expected_sha='1cef51ee7cf36c4e8b06c85c79b55d54b9fe9c7b62369148cab6dfbfc38ffb4a'
           ready=0
-          for attempt in {1..24}; do
+          for attempt in {1..30}; do
             release_query="release=${GITHUB_SHA}-${attempt}"
-            if curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' \
-                 -o /tmp/kpcg-featured.jpg "${KPCG_PRODUCTION_URL}/assets/real/featured-community-tree-action.jpg?${release_query}" \
-              && [ "$(wc -c < /tmp/kpcg-featured.jpg)" -ge 40000 ] \
-              && [ "$(sha256sum /tmp/kpcg-featured.jpg | awk '{print $1}')" = "$expected_sha" ] \
-              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" | grep -q 'KPCGApplyRealImageryV162' \
-              && curl --fail --silent --show-error --max-time 15 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" | grep -q 'kpcg-v16.2-20260912'; then
+            source="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" || true)"
+            sw="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" || true)"
+            if grep -q 'data-release="v17.0"' <<<"$source" \
+              && grep -q 'data-prerendered-home' <<<"$source" \
+              && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
+              && grep -q 'kpcg-v17.0-20260913' <<<"$sw"; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'Cloudflare production did not expose the v16.2 verified-imagery release bytes within the verification window.'
+            echo 'Cloudflare production did not expose the consolidated v17 source-visible release within the verification window.'
             exit 1
           fi
 
-      - name: Run production desktop/mobile, route, asset and service-worker smoke
+      - name: Run production browser and keyboard accessibility QA
         run: |
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/browser-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
+
+      - name: Run production mobile Lighthouse audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_PATH="$(node -e "const {chromium}=require('playwright');process.stdout.write(chromium.executablePath())")"
+          npx --yes lighthouse@13.4.1 "${KPCG_PRODUCTION_URL}/#/home" \
+            --output=json --output=html --output-path=artifacts/lighthouse-production-mobile \
+            --chrome-flags='--headless --no-sandbox' --quiet
+          node scripts/lighthouse-gate.mjs artifacts/lighthouse-production-mobile.report.json
 
       - name: Upload production verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v16.2-production-${{ github.run_id }}
+          name: kpcg-v17-production-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30
