@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - remediation-v17-single-baseline
+      - hardening-v17-1-ip-guardrails
   pull_request:
     branches:
       - main
@@ -47,7 +48,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run desktop/mobile, keyboard-map and service-worker QA
+      - name: Run desktop/mobile, keyboard-map, service-worker and IP-guard QA
         shell: bash
         run: |
           set -euo pipefail
@@ -69,6 +70,7 @@ jobs:
           fi
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/ip-hardening-smoke.mjs
 
           export CHROME_PATH="$(node -e "const {chromium}=require('playwright');process.stdout.write(chromium.executablePath())")"
           npx --yes lighthouse@13.4.1 'http://127.0.0.1:8787/#/home' \
@@ -121,6 +123,7 @@ jobs:
             if grep -q 'data-release="v17.0"' <<<"$source" \
               && grep -q 'data-prerendered-home' <<<"$source" \
               && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
+              && grep -q '/ip-guard.js?v=17.1' <<<"$source" \
               && grep -q 'kpcg-v17.0-20260913' <<<"$sw"; then
               ready=1
               break
@@ -128,14 +131,15 @@ jobs:
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'Cloudflare production did not expose the consolidated v17 source-visible release within the verification window.'
+            echo 'Cloudflare production did not expose the consolidated v17 IP-hardened release within the verification window.'
             exit 1
           fi
 
-      - name: Run production browser and keyboard accessibility QA
+      - name: Run production browser, keyboard and IP-protection QA
         run: |
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/browser-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/ip-hardening-smoke.mjs
 
       - name: Run production mobile Lighthouse audit
         shell: bash
