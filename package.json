@@ -1,8 +1,8 @@
 {
   "name": "kpcg-prototype",
-  "version": "1.0.0",
+  "version": "17.0.0",
   "private": true,
-  "description": "KPCG Digital Platform executive prototype deployed as a Cloudflare Worker with Static Assets.",
+  "description": "KPCG public prototype: consolidated source-visible application deployed with Cloudflare Workers Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
     "acceptance": "node scripts/acceptance-smoke.mjs",
@@ -18,6 +18,6 @@
     "wrangler": "^4.0.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
