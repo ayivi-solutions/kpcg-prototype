@@ -27,13 +27,16 @@ try{
   await page.goto(`${baseURL}/#/where-we-work`,{waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForSelector('.map-panel[data-admin-enhanced="17.2-adm3"] .ashape',{timeout:25000});
   await page.waitForFunction(()=>document.querySelectorAll('.kpcg-adm .admin-unit-label').length===47,null,{timeout:12000});
+  await page.waitForFunction(()=>window.KPCGAdminLabels?.version==='20.2.0'&&window.KPCGClimateUI?.version==='20.0.4',null,{timeout:12000});
 
   const state=()=>page.evaluate(()=>({
     level:document.querySelector('.kpcg-adm .lvl')?.textContent||'',
     shapes:document.querySelectorAll('.kpcg-adm .ashape').length,
     selected:document.querySelectorAll('.kpcg-adm .ashape.sel').length,
     labels:document.querySelectorAll('.kpcg-adm .admin-unit-label').length,
+    visibleLabels:[...document.querySelectorAll('.kpcg-adm .admin-unit-label')].filter(x=>x.dataset.suppressed!=='true').length,
     centreLabels:document.querySelectorAll('.kpcg-adm .admin-centre-label').length,
+    visibleCentreLabels:[...document.querySelectorAll('.kpcg-adm .admin-centre-label')].filter(x=>getComputedStyle(x).opacity!=='0').length,
     labelText:[...document.querySelectorAll('.kpcg-adm .admin-unit-label')].map(x=>x.textContent.trim()).filter(Boolean),
     centreText:[...document.querySelectorAll('.kpcg-adm .admin-centre-label')].map(x=>x.textContent.trim()).filter(Boolean),
     summary:document.querySelector('.kpcg-adm .asum')?.innerText||''
@@ -41,7 +44,23 @@ try{
 
   let adm1=await state();
   if(!/ADM1/.test(adm1.level)||adm1.shapes!==47||adm1.labels!==47)throw new Error(`ADM1 state/labels failed ${JSON.stringify(adm1)}`);
+  if(adm1.visibleLabels>=47)throw new Error(`ADM1 labels were not decluttered: ${JSON.stringify(adm1)}`);
   if(!adm1.centreLabels||!adm1.centreText.some(x=>/county HQ|national capital/i.test(x)))throw new Error(`ADM1 administrative-centre labels missing ${JSON.stringify(adm1.centreText.slice(0,8))}`);
+  if(adm1.visibleCentreLabels>3)throw new Error(`ADM1 centre labels are visually over-dense: ${JSON.stringify(adm1)}`);
+
+  const firstCounty=page.locator('.kpcg-adm .ashape').first();
+  await firstCounty.hover();
+  await page.waitForTimeout(250);
+  await page.evaluate(()=>{
+    const panel=document.querySelector('.kpcg-adm'),layer=panel?.querySelector('[data-admin-map-label-layer]');
+    if(layer)layer.dataset.stabilityToken='hover-flicker-regression';
+    window.__kpcgFlickerMutations=0;
+    window.__kpcgFlickerObserver=new MutationObserver(records=>{window.__kpcgFlickerMutations+=records.filter(r=>r.type==='childList').length});
+    if(panel)window.__kpcgFlickerObserver.observe(panel,{subtree:true,childList:true});
+  });
+  await page.waitForTimeout(650);
+  const flicker=await page.evaluate(()=>{window.__kpcgFlickerObserver?.disconnect();return{mutations:window.__kpcgFlickerMutations||0,stable:document.querySelector('.kpcg-adm [data-admin-map-label-layer]')?.dataset.stabilityToken==='hover-flicker-regression'}});
+  if(!flicker.stable||flicker.mutations>2)throw new Error(`hover flicker regression detected ${JSON.stringify(flicker)}`);
 
   const activateFirst=async()=>{
     const shape=page.locator('.kpcg-adm .ashape').first();
@@ -80,7 +99,7 @@ try{
   await page.screenshot({path:path.join(artifactDir,'admin-map-adm1.png'),fullPage:false});
 
   if(errors.length)throw new Error(`page errors: ${errors.join(' | ')}`);
-  summary={baseURL,hierarchy:counts,adm0,adm1,adm2,adm3,wardSelected:true,labelsVerified:true,centreLabelsVerified:adm1.centreLabels>0,roundTripADM0toADM1:roundTrip.shapes===47,errors,passed:true};
+  summary={baseURL,hierarchy:counts,adm0,adm1,adm2,adm3,wardSelected:true,labelsVerified:true,declutterVerified:adm1.visibleLabels<47,centreLabelsVerified:adm1.centreLabels>0,hoverFlickerRegression:flicker,roundTripADM0toADM1:roundTrip.shapes===47,errors,passed:true};
   await context.close();
 }catch(error){
   summary={baseURL,passed:false,error:error.stack||String(error)};
