@@ -111,7 +111,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Wait for Cloudflare to expose consolidated v17
+      - name: Wait for Cloudflare to expose theme release
         shell: bash
         run: |
           set -euo pipefail
@@ -121,18 +121,20 @@ jobs:
             release_query="release=${GITHUB_SHA}-${attempt}"
             source="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" || true)"
             sw="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" || true)"
+            guard="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/ip-guard.js?${release_query}" || true)"
             if grep -q 'data-release="v17.0"' <<<"$source" \
               && grep -q 'data-prerendered-home' <<<"$source" \
               && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
               && grep -q '/ip-guard.js?v=17.1' <<<"$source" \
-              && grep -q 'kpcg-v17.0-20260913' <<<"$sw"; then
+              && grep -q 'kpcg-v17.0-theme-20260914' <<<"$sw" \
+              && grep -q 'v18.1-theme-20260914' <<<"$guard"; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'Cloudflare production did not expose the consolidated v17 IP-hardened release within the verification window.'
+            echo 'Cloudflare production did not expose the day/night theme release within the verification window.'
             exit 1
           fi
 
