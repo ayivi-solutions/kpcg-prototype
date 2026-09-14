@@ -3,6 +3,7 @@
   const VERSION='17.2-adm3';
   const EXPERIENCE='19.0.0';
   const PRESENTATION='19.1.0';
+  const HOME_READABILITY='19.2.0';
   const slugs=new Map();
   const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const shapeName=shape=>{
@@ -20,6 +21,14 @@
       const name=shapeName(shape),key=norm(name),slug=slugs.get(key)||key.replace(/\s+/g,'-');
       if(slug)shape.dataset.county=slug;
     });
+  };
+  const loadHomeReadability=()=>{
+    if(document.querySelector('link[data-kpcg-home-readability]'))return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=`/theme-feature-readability-v19.css?v=${HOME_READABILITY}`;
+    link.dataset.kpcgHomeReadability=HOME_READABILITY;
+    document.head.appendChild(link);
   };
   const loadExperience=()=>{
     if(document.querySelector('script[data-kpcg-experience]'))return;
@@ -40,6 +49,7 @@
     document.head.appendChild(script);
   };
   const install=()=>{
+    loadHomeReadability();
     loadExperience();
     loadPresentation();
     capture();
