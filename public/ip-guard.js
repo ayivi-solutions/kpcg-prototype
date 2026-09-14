@@ -26,7 +26,6 @@
   };
   ensureThemeCorrectionStylesheet();
 
-  /* Day / night mode. The visible glyph is the CURRENT mode. */
   const THEME_KEY = 'kpcg-theme';
   const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const storedTheme = () => {
@@ -156,14 +155,37 @@
   };
 
   /*
-   * v18 is already a native one-document continuous page. Keep standard
-   * fragment navigation intact so the browser, keyboard users, deep links and
-   * the existing IntersectionObserver scroll-spy all share one source of truth.
-   * CSS supplies smooth scrolling and scroll-margin for the sticky header.
+   * The public root is a single continuous document. The section rail is a
+   * navigation accelerator, not pagination. Resolve its selected section
+   * deterministically so scroll-spy cannot replace the user's chosen hash
+   * while the browser is moving to the section.
    */
   const installContinuousNavigation = () => {
-    if (root.dataset.release !== 'v18.0' || !document.body) return;
-    document.body.dataset.kpcgContinuousNav = 'native';
+    if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav) return;
+    document.body.dataset.kpcgContinuousNav = '1';
+
+    document.addEventListener('click', event => {
+      const anchor = event.target?.closest?.('.section-rail a[href^="#"]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href') || '';
+      if (!/^#[A-Za-z][A-Za-z0-9_-]*$/.test(href)) return;
+      const target = document.getElementById(href.slice(1));
+      if (!target) return;
+
+      event.preventDefault();
+      const header = document.querySelector('.site-header');
+      const offset = header ? Math.round(header.getBoundingClientRect().height) : 0;
+      const y = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
+      history.replaceState(null, '', href);
+      window.scrollTo({ top: y, behavior: 'auto' });
+
+      const holdUntil = performance.now() + 650;
+      const hold = now => {
+        if (location.hash !== href) history.replaceState(null, '', href);
+        if (now < holdUntil) requestAnimationFrame(hold);
+      };
+      requestAnimationFrame(hold);
+    }, true);
   };
 
   const loadEditorialRedesign = () => {
