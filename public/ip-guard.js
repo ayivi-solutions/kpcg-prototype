@@ -175,9 +175,6 @@
       rail.scrollTo({ left: Math.max(0, rail.scrollLeft + delta), behavior: 'smooth' });
     };
 
-    // The page's built-in IntersectionObserver calls scrollIntoView on the
-    // active rail link. Shadow that method on these links so it scrolls only
-    // the horizontal rail and cannot move the document vertically.
     links.forEach(link => {
       link.scrollIntoView = () => centreRailLink(link);
     });
@@ -238,7 +235,8 @@
 
     window.addEventListener('scroll', queueSectionSync, { passive: true });
     window.addEventListener('resize', queueSectionSync, { passive: true });
-    requestAnimationFrame(queueSectionSync);
+    // Do not force an initial state here: the root's compatibility layer may
+    // still be handing an old /#/section route to its canonical #section anchor.
   };
 
   const loadEditorialRedesign = () => {
