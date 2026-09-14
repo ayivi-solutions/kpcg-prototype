@@ -58,7 +58,6 @@
     if (meta && meta.getAttribute('content') !== value) meta.setAttribute('content', value);
   };
 
-  // IMPORTANT: glyph communicates CURRENT mode, not the destination action.
   const themeGlyph = theme => theme === 'dark' ? '☾' : '☀︎';
 
   const syncThemeToggle = button => {
@@ -95,8 +94,6 @@
   };
 
   const toggleTheme = () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', { persist: true });
-
-  // Resolve the theme as early as this deferred guard script runs.
   applyTheme(storedTheme() || resolvedSystemTheme());
 
   const ensureThemeToggle = () => {
@@ -196,9 +193,27 @@
 
   /* ---------------------------------------------------------------------
      v18 continuous-scroll section navigation
-     Keep the user's selected anchor canonical until the smooth scroll has
-     settled so scroll-spy cannot race the address-bar hash mid-transition.
+     Lock a user-selected section hash while the smooth scroll is resolving.
+     This prevents the IntersectionObserver scroll-spy from racing the
+     address bar and falsely replacing the destination with a neighbouring
+     section during the animation.
      --------------------------------------------------------------------- */
+  const nativeReplaceState = history.replaceState.bind(history);
+  let sectionNavLock = null;
+
+  history.replaceState = function(state, title, url) {
+    if (
+      sectionNavLock &&
+      performance.now() < sectionNavLock.until &&
+      typeof url === 'string' &&
+      /^#[A-Za-z][A-Za-z0-9_-]*$/.test(url) &&
+      url !== sectionNavLock.href
+    ) {
+      return nativeReplaceState(state, title, sectionNavLock.href);
+    }
+    return nativeReplaceState(state, title, url);
+  };
+
   const installContinuousNavigation = () => {
     if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav === '1') return;
     document.body.dataset.kpcgContinuousNav = '1';
@@ -214,26 +229,46 @@
 
       event.preventDefault();
       const started = performance.now();
-      const settleForMs = reducedMotion ? 120 : 2400;
-      history.replaceState(null, '', href);
+      const travelMs = reducedMotion ? 160 : 2600;
+      const holdMs = reducedMotion ? 400 : 3600;
+      sectionNavLock = { href, until: started + holdMs };
+      nativeReplaceState(null, '', href);
       target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
 
       const settle = now => {
-        if (location.hash !== href) history.replaceState(null, '', href);
+        if (location.hash !== href) nativeReplaceState(null, '', href);
         const header = document.getElementById('siteHeader');
         const desiredTop = header ? Math.round(header.getBoundingClientRect().height) : 0;
         const actualTop = Math.round(target.getBoundingClientRect().top);
-        const settled = Math.abs(actualTop - desiredTop) <= 24;
-        if (!settled && now - started < settleForMs) requestAnimationFrame(settle);
-        else history.replaceState(null, '', href);
+        const settled = Math.abs(actualTop - desiredTop) <= 28 || actualTop < 180;
+
+        if (!settled && now - started < travelMs) {
+          requestAnimationFrame(settle);
+          return;
+        }
+
+        if (!settled) {
+          const y = Math.max(0, window.scrollY + actualTop - desiredTop);
+          window.scrollTo({ top: y, behavior: 'auto' });
+        }
+        nativeReplaceState(null, '', href);
+
+        const keepCanonical = tick => {
+          if (!sectionNavLock || sectionNavLock.href !== href) return;
+          if (tick < sectionNavLock.until) {
+            if (location.hash !== href) nativeReplaceState(null, '', href);
+            requestAnimationFrame(keepCanonical);
+          } else {
+            sectionNavLock = null;
+          }
+        };
+        requestAnimationFrame(keepCanonical);
       };
       requestAnimationFrame(settle);
     }, false);
   };
 
   const loadEditorialRedesign = () => {
-    // The editorial compatibility layer belongs only to the retained detailed
-    // application. The new continuous public page has its own native layout.
     if (!document.querySelector('#app')) return;
     if (document.querySelector('script[data-kpcg-editorial-loader]')) return;
     const script = document.createElement('script');
