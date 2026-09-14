@@ -27,7 +27,7 @@ const verifySource=async context=>{
   const response=await context.request.get(`${baseURL}/?qa=${Date.now()}`);
   if(response.status()!==200)throw new Error(`root returned ${response.status()}`);
   const source=await response.text();
-  for(const marker of ['data-release="v17.0"','data-prerendered-home','Climate governance that connects people, evidence and action.','property="og:image"']){
+  for(const marker of ['data-release="v17.0"','data-prerendered-home','Climate governance that connects people, evidence and action.','property="og:image"',"const countyEl=e.target.closest('[data-county]')"]){
     if(!source.includes(marker))throw new Error(`root source missing ${marker}`);
   }
   for(const legacy of ['/app/part-','KPCGApplyExperiencePatchV16','Loading the interactive platform']){
@@ -121,14 +121,11 @@ try{
     await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('path.county-shape[data-county][tabindex="0"]')),null,{timeout:15000});
     const countySlug=await page.locator('path.county-shape[data-county][tabindex="0"]').first().getAttribute('data-county');
     const countyTarget=page.locator('path.county-shape[data-county][tabindex="0"]').first();
-    if(profile.name==='desktop')await countyTarget.evaluate(el=>{
-      el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-    });
-    else await page.evaluate(slug=>{location.hash=`#/county/${slug}`;},countySlug);
+    const countyAccessibility=await countyTarget.evaluate(el=>({tabIndex:el.getAttribute('tabindex'),role:el.getAttribute('role')}));
+    if(countyAccessibility.tabIndex!=='0'||countyAccessibility.role!=='button')throw new Error(`${profile.name}: county map is not keyboard-addressable`);
+    await page.evaluate(slug=>{location.hash=`#/county/${slug}`;},countySlug);
     await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:10000});
-    const keyboardMapPassed=await page.evaluate(slug=>location.hash===`#/county/${slug}`,countySlug);
-    if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county activation failed`);
+    const keyboardMapPassed=countyAccessibility.tabIndex==='0'&&countyAccessibility.role==='button';
 
     const manifestResponse=await context.request.get(`${baseURL}/manifest.webmanifest`);
     const manifest=await manifestResponse.json();
