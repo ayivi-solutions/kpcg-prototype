@@ -1,0 +1,121 @@
+name: KPCG Theme v18.2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theme-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      - name: Install theme QA tooling
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run v18.2 day-night visual-contract QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          npx --yes wrangler@4.131.1 dev --local --port 8787 > artifacts/wrangler-theme-preview.log 2>&1 &
+          WRANGLER_PID=$!
+          trap 'kill "$WRANGLER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8787/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/wrangler-theme-preview.log
+            exit 1
+          fi
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/theme-smoke.mjs
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
+
+      - name: Upload preview theme evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-theme-v18-2-preview-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  theme-production:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: theme-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KPCG_PRODUCTION_URL: https://kpcg.ayivisolutions.com
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      - name: Install production theme QA tooling
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Wait for corrected theme release on Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          ready=0
+          for attempt in {1..36}; do
+            nonce="theme-v18-2-${GITHUB_SHA}-${attempt}"
+            guard="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/ip-guard.js?${nonce}" || true)"
+            css="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/ip-guard.css?${nonce}" || true)"
+            sw="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${nonce}" || true)"
+            if grep -q "v18.2-theme-20260914" <<<"$guard" \
+              && grep -q "KPCG DAY / NIGHT THEME SYSTEM · v18.2" <<<"$css" \
+              && grep -q "kpcg-v18.2-theme-20260914" <<<"$sw"; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'Cloudflare did not expose the corrected KPCG v18.2 theme contract within the verification window.'
+            exit 1
+          fi
+
+      - name: Run production day-night visual-contract QA
+        run: |
+          mkdir -p artifacts
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/theme-smoke.mjs
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
+
+      - name: Upload production theme evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-theme-v18-2-production-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
