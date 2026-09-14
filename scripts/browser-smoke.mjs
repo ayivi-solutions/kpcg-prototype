@@ -12,10 +12,10 @@ const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||proces
 const productionMode=process.env.KPCG_PRODUCTION_MODE==='1';
 const outputPath=path.join(artifactDir,productionMode?'production-smoke-summary.json':'browser-smoke-summary.json');
 const expectedRelease='v17.0';
-const expectedSW='kpcg-v17.0-20260913';
+const expectedSW='kpcg-v17.0-motion-20260914';
 const firstHero='/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg';
 const profiles=[{name:'desktop',viewport:{width:1440,height:900}},{name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}];
-const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$))/;
+const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$))/;
 
 fs.mkdirSync(artifactDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
@@ -39,7 +39,9 @@ const verifySource=async context=>{
   const heroResponse=await context.request.get(`${baseURL}${firstHero}?qa=${Date.now()}`);
   const heroBytes=(await heroResponse.body()).length;
   if(heroResponse.status()!==200||heroBytes<40000)throw new Error(`first hero unavailable or too small: ${heroResponse.status()} / ${heroBytes}`);
-  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
+  const motionResponses=await Promise.all(['css','js'].map(ext=>context.request.get(`${baseURL}/motion-system.${ext}?qa=${Date.now()}`)));
+  if(motionResponses.some(item=>item.status()!==200))throw new Error('site-wide motion assets unavailable');
+  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,motionAssets:motionResponses.map(item=>item.status()),firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
 };
 
 const verifyBrowserCancelledAssets=async(context,failedRequests)=>{
@@ -81,6 +83,7 @@ try{
     if(!response||response.status()!==200)throw new Error(`${profile.name}: root ${response?.status()??'no response'}`);
     await page.waitForFunction(()=>Boolean(document.querySelector('nav,[role="navigation"]'))&&(document.body?.innerText||'').length>500,null,{timeout:30000});
     await page.waitForFunction(()=>!document.querySelector('[data-prerendered-home]')&&document.querySelectorAll('[data-v16-hero-slide]').length>=12&&document.querySelectorAll('[data-v16-slide]').length>=12,null,{timeout:15000});
+    await page.waitForFunction(()=>document.body.classList.contains('motion-ready')&&document.querySelectorAll('.motion-item').length>=20&&Boolean(document.querySelector('.motion-progress')),null,{timeout:10000});
 
     const home=await page.evaluate(()=>({
       hash:location.hash,
@@ -89,10 +92,13 @@ try{
       heroDots:document.querySelectorAll('[data-v16-slide]').length,
       activeSlides:document.querySelectorAll('[data-v16-hero-slide].active').length,
       navItems:document.querySelectorAll('nav a,nav button').length,
+      motionItems:document.querySelectorAll('.motion-item').length,
+      visibleMotionItems:document.querySelectorAll('.motion-visible').length,
+      motionProgress:Boolean(document.querySelector('.motion-progress')),
       release:document.documentElement.dataset.release||null
     }));
     if(home.release!==expectedRelease)throw new Error(`${profile.name}: DOM release ${home.release}`);
-    if(!home.identity||home.heroSlides<12||home.heroDots!==home.heroSlides||home.activeSlides!==1)throw new Error(`${profile.name}: hero/identity contract failed ${JSON.stringify(home)}`);
+    if(!home.identity||home.heroSlides<12||home.heroDots!==home.heroSlides||home.activeSlides!==1||home.motionItems<20||!home.motionProgress)throw new Error(`${profile.name}: hero/identity/motion contract failed ${JSON.stringify(home)}`);
 
     const targetIndex=Math.min(4,home.heroSlides-1);
     await page.click(`[data-v16-slide="${targetIndex}"]`);
@@ -101,7 +107,12 @@ try{
     const heroTransition=await page.evaluate(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return {src:img?.getAttribute('src')||'',dataSrc:img?.getAttribute('data-src')||'',naturalWidth:img?.naturalWidth||0};},targetIndex);
     if(!heroTransition.src||heroTransition.dataSrc||heroTransition.naturalWidth===0)throw new Error(`${profile.name}: lazy hero slide did not load ${JSON.stringify(heroTransition)}`);
 
-    for(const hash of ['#/about','#/themes','#/programmes','#/knowledge']){
+    await page.evaluate(()=>document.querySelector('a[href="#/about"]')?.click());
+    await page.waitForFunction(()=>location.hash==='#/about'&&document.querySelectorAll('.motion-item').length>=10,null,{timeout:10000});
+    const routeMotion=await page.evaluate(()=>({hash:location.hash,leaving:document.body.classList.contains('motion-route-leaving'),items:document.querySelectorAll('.motion-item').length}));
+    if(routeMotion.hash!=='#/about'||routeMotion.leaving||routeMotion.items<10)throw new Error(`${profile.name}: animated route transition failed ${JSON.stringify(routeMotion)}`);
+
+    for(const hash of ['#/themes','#/programmes','#/knowledge']){
       await page.evaluate(h=>{location.hash=h;},hash);
       await page.waitForFunction(h=>location.hash===h&&Boolean(document.querySelector('main,#app,#root,[data-page],[class*="page"]')),hash,{timeout:10000});
     }
@@ -128,7 +139,7 @@ try{
     const {verifiedAbortedRequests,unresolvedFailedRequests}=await verifyBrowserCancelledAssets(context,failedRequests);
     const timing=await page.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0];return n?{domContentLoaded:Math.round(n.domContentLoadedEventEnd),load:Math.round(n.loadEventEnd),transferSize:n.transferSize||0}:null;});
     if(pageErrors.length||unresolvedFailedRequests.length||badResponses.length)throw new Error(`${profile.name}: browser errors ${JSON.stringify({pageErrors,failedRequests:unresolvedFailedRequests,verifiedAbortedRequests,badResponses})}`);
-    results.push({profile:profile.name,viewport:profile.viewport,httpStatus:response.status(),home,heroTransition,keyboardMapPassed,manifest:{startUrl:manifest.start_url},serviceWorker:sw,timing,pageErrors,failedRequests:unresolvedFailedRequests,verifiedAbortedRequests,badResponses,passed:true});
+    results.push({profile:profile.name,viewport:profile.viewport,httpStatus:response.status(),home,heroTransition,routeMotion,keyboardMapPassed,manifest:{startUrl:manifest.start_url},serviceWorker:sw,timing,pageErrors,failedRequests:unresolvedFailedRequests,verifiedAbortedRequests,badResponses,passed:true});
     await context.close();
   }
 }catch(error){failed=true;results.push({passed:false,error:error.stack||String(error)});}finally{await browser.close();}

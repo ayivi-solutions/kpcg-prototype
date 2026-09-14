@@ -1,9 +1,11 @@
-const RELEASE='kpcg-v17.0-20260913';
+const RELEASE='kpcg-v17.0-motion-20260914';
 const CACHE=`kpcg-${RELEASE}`;
 const APP_SHELL=[
   '/',
   '/index.html',
   '/manifest.webmanifest',
+  '/motion-system.css',
+  '/motion-system.js',
   '/favicon.ico',
   '/favicon-32x32.png',
   '/apple-touch-icon.png',
@@ -47,7 +49,7 @@ self.addEventListener('fetch',event=>{
     }));
     return;
   }
-  if(url.pathname==='/index.html'||url.pathname==='/manifest.webmanifest'||url.pathname.startsWith('/assets/')){
+  if(url.pathname==='/index.html'||url.pathname==='/manifest.webmanifest'||url.pathname==='/motion-system.css'||url.pathname==='/motion-system.js'||url.pathname.startsWith('/assets/')){
     event.respondWith(networkFirst(request));
   }
 });

@@ -8,7 +8,7 @@ const __dirname=path.dirname(__filename);
 const root=path.resolve(__dirname,'..');
 const artifactDir=path.join(root,'artifacts');
 const baseURL=(process.env.KPCG_PREVIEW_URL||'http://127.0.0.1:8787').replace(/\/$/,'');
-const expectedCache='kpcg-kpcg-v17.0-20260913';
+const expectedCache='kpcg-kpcg-v17.0-motion-20260914';
 const outputPath=path.join(artifactDir,'service-worker-cache-summary.json');
 fs.mkdirSync(artifactDir,{recursive:true});
 
