@@ -14,7 +14,7 @@ const emitArtifacts=process.argv.includes('--emit-artifacts');
 const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||process.env.GITHUB_SHA||'unknown';
 const release='v18.0';
 const legacyRelease='v17.0';
-const serviceWorkerRelease='kpcg-v18.0-continuous-20260914';
+const serviceWorkerRelease='kpcg-v18.2-theme-20260914';
 const qualityFloorBytes=40000;
 const fail=message=>{throw new Error(message)};
 const html=fs.readFileSync(rootHtmlPath,'utf8');
@@ -124,7 +124,7 @@ if(legacyBytes<300000)fail(`Preserved v17 consolidated document unexpectedly sma
 const manifest=JSON.parse(fs.readFileSync(path.join(publicDir,'manifest.webmanifest'),'utf8'));
 if(manifest.start_url!=='/#home')fail(`Unexpected v18 manifest start_url: ${manifest.start_url}`);
 const sw=fs.readFileSync(path.join(publicDir,'sw.js'),'utf8');
-if(!sw.includes(serviceWorkerRelease))fail(`Service worker release is not ${serviceWorkerRelease}.`);
+if(!sw.includes(`const RELEASE='${serviceWorkerRelease}'`))fail(`Service worker release is not ${serviceWorkerRelease}.`);
 if(!sw.includes("'/legacy.html'"))fail('Service worker does not preserve the legacy fallback in its shell.');
 if(/\/app\//.test(sw))fail('Service worker still references retired /app/ fragments.');
 
