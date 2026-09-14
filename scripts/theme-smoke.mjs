@@ -19,6 +19,9 @@ const summary={release:'v18.0',themeContract:'v18.2',mode:productionMode?'produc
 const waitTheme=async(page,expected)=>{
   await page.waitForFunction(theme=>document.documentElement.dataset.theme===theme&&document.documentElement.dataset.themeContract==='v18.2',expected,{timeout:20000});
   await page.waitForSelector('.kpcg-theme-toggle',{state:'visible',timeout:15000});
+  // Production UI intentionally animates the palette handover. Assertions must
+  // sample the resolved state, not the first animation frame after data-theme flips.
+  await page.waitForTimeout(420);
 };
 
 const rgbIsVeryLight=value=>{
