@@ -2,14 +2,12 @@ const RELEASE='kpcg-v18.2-theme-20260914';
 const CACHE=`kpcg-${RELEASE}`;
 const APP_SHELL=[
   '/',
-  '/legacy.html',
   '/manifest.webmanifest',
   '/ip-guard.css',
   '/ip-guard.js',
   '/theme-v18-2.css',
   '/motion-system.css',
   '/motion-system.js',
-  '/editorial-redesign-v3.js',
   '/favicon.ico',
   '/favicon-32x32.png',
   '/apple-touch-icon.png',
