@@ -5,6 +5,14 @@ const APP_SHELL=[
   '/manifest.webmanifest',
   '/motion-system.css',
   '/motion-system.js',
+  '/admin-map-v17.js',
+  '/admin-map-core-v17.js',
+  '/data/admin/adm0.topo.json',
+  '/data/admin/adm1.topo.json',
+  '/data/admin/adm2.topo.json',
+  '/data/admin/adm3.topo.json',
+  '/data/admin/hierarchy-index.json',
+  '/data/admin/provenance.json',
   '/favicon.ico',
   '/favicon-32x32.png',
   '/apple-touch-icon.png',
@@ -49,5 +57,5 @@ self.addEventListener('fetch',event=>{
     event.respondWith(networkFirst(request).catch(async()=>{const cache=await caches.open(CACHE);return (await cache.match('/'))||Response.error()}));
     return;
   }
-  if(SHELL_PATHS.has(url.pathname)||url.pathname.startsWith('/assets/'))event.respondWith(networkFirst(request));
+  if(SHELL_PATHS.has(url.pathname)||url.pathname.startsWith('/assets/')||url.pathname.startsWith('/data/admin/'))event.respondWith(networkFirst(request));
 });

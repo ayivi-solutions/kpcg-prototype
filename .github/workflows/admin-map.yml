@@ -1,0 +1,68 @@
+name: KPCG ADM0-ADM3 Map
+
+on:
+  push:
+    branches:
+      - main
+      - adm0-adm3-map
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  admin-map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      - name: Install project tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Synchronize and verify supplied Kenya boundaries
+        run: npm run admin:prepare
+
+      - name: Install browser QA tooling
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run ADM0 to ADM3 interaction smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          npx --yes wrangler@4.131.1 dev --local --port 8787 > artifacts/wrangler-admin-map.log 2>&1 &
+          WRANGLER_PID=$!
+          trap 'kill "$WRANGLER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8787/data/admin/hierarchy-index.json >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/wrangler-admin-map.log
+            exit 1
+          fi
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 npm run test:admin-map
+
+      - name: Upload ADM map evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-adm-map-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
