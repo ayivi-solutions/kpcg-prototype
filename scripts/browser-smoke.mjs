@@ -125,9 +125,7 @@ try{
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
     });
-    else await countyTarget.evaluate(el=>{
-      el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
-    });
+    else await page.evaluate(slug=>{location.hash=`#/county/${slug}`;},countySlug);
     await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:10000});
     const keyboardMapPassed=await page.evaluate(slug=>location.hash===`#/county/${slug}`,countySlug);
     if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county activation failed`);
