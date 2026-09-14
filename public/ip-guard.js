@@ -26,64 +26,39 @@
   };
   ensureThemeCorrectionStylesheet();
 
-  /* ---------------------------------------------------------------------
-     KPCG day / night mode
-     - first visit follows the operating-system preference
-     - explicit light/dark choice persists across sessions and tabs
-     - the visible glyph represents the CURRENT state: sun=day, moon=night
-     - accessible labels describe the ACTION that clicking will perform
-     - the header control is re-mounted after route/DOM re-renders
-     --------------------------------------------------------------------- */
+  /* Day / night mode. The visible glyph is the CURRENT mode. */
   const THEME_KEY = 'kpcg-theme';
   const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-
   const storedTheme = () => {
     try {
       const value = localStorage.getItem(THEME_KEY);
       return value === 'light' || value === 'dark' ? value : null;
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   };
-
   const resolvedSystemTheme = () => systemDark?.matches ? 'dark' : 'light';
   const currentTheme = () => root.dataset.theme === 'dark' ? 'dark' : 'light';
-
-  const writeTheme = theme => {
-    try { localStorage.setItem(THEME_KEY, theme); } catch (_) {}
-  };
-
+  const writeTheme = theme => { try { localStorage.setItem(THEME_KEY, theme); } catch (_) {} };
   const setMetaContent = (name, value) => {
     const meta = document.querySelector(`meta[name="${name}"]`);
     if (meta && meta.getAttribute('content') !== value) meta.setAttribute('content', value);
   };
-
   const themeGlyph = theme => theme === 'dark' ? '☾' : '☀︎';
-
   const syncThemeToggle = button => {
     if (!button) return;
     const theme = currentTheme();
     const dark = theme === 'dark';
-    const pressed = dark ? 'true' : 'false';
-    const label = dark ? 'Switch to day mode' : 'Switch to night mode';
-    const title = dark ? 'Night mode — switch to day mode' : 'Day mode — switch to night mode';
     button.dataset.themeMode = theme;
-    if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
-    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
-    if (button.getAttribute('title') !== title) button.setAttribute('title', title);
+    button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    button.setAttribute('aria-label', dark ? 'Switch to day mode' : 'Switch to night mode');
+    button.setAttribute('title', dark ? 'Night mode — switch to day mode' : 'Day mode — switch to night mode');
     const glyph = button.querySelector('.kpcg-theme-glyph');
-    const nextGlyph = themeGlyph(theme);
-    if (glyph && glyph.textContent !== nextGlyph) glyph.textContent = nextGlyph;
+    if (glyph) glyph.textContent = themeGlyph(theme);
   };
-
-  const syncAllThemeToggles = () => {
-    document.querySelectorAll('.kpcg-theme-toggle').forEach(syncThemeToggle);
-  };
-
+  const syncAllThemeToggles = () => document.querySelectorAll('.kpcg-theme-toggle').forEach(syncThemeToggle);
   const applyTheme = (theme, { persist = false } = {}) => {
     const next = theme === 'dark' ? 'dark' : 'light';
-    if (root.dataset.theme !== next) root.dataset.theme = next;
-    if (root.style.colorScheme !== next) root.style.colorScheme = next;
+    root.dataset.theme = next;
+    root.style.colorScheme = next;
     root.classList.add('kpcg-theme-ready');
     setMetaContent('theme-color', next === 'dark' ? '#0b1210' : '#0b5139');
     setMetaContent('color-scheme', next);
@@ -92,7 +67,6 @@
     window.dispatchEvent(new CustomEvent('kpcg:themechange', { detail: { theme: next, persisted: persist } }));
     return next;
   };
-
   const toggleTheme = () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', { persist: true });
   applyTheme(storedTheme() || resolvedSystemTheme());
 
@@ -130,13 +104,11 @@
     if (typeof systemDark.addEventListener === 'function') systemDark.addEventListener('change', onSystemThemeChange);
     else if (typeof systemDark.addListener === 'function') systemDark.addListener(onSystemThemeChange);
   }
-
   window.addEventListener('storage', event => {
     if (event.key !== THEME_KEY) return;
     const value = event.newValue;
     applyTheme(value === 'light' || value === 'dark' ? value : resolvedSystemTheme());
   });
-
   window.KPCGTheme = Object.freeze({
     get: currentTheme,
     set: theme => applyTheme(theme, { persist: true }),
@@ -148,11 +120,7 @@
   });
 
   const editable = target => Boolean(target?.closest?.('input,textarea,select,[contenteditable="true"]'));
-  const block = event => {
-    event.preventDefault();
-    event.stopPropagation();
-    return false;
-  };
+  const block = event => { event.preventDefault(); event.stopPropagation(); return false; };
 
   if (!authorized) {
     const deny = () => {
@@ -168,16 +136,12 @@
   document.addEventListener('copy', e => editable(e.target) ? undefined : block(e), true);
   document.addEventListener('cut', e => editable(e.target) ? undefined : block(e), true);
   document.addEventListener('selectstart', e => editable(e.target) ? undefined : block(e), true);
-  document.addEventListener('dragstart', e => {
-    if (e.target?.closest?.('img,svg,picture,a')) block(e);
-  }, true);
-
+  document.addEventListener('dragstart', e => { if (e.target?.closest?.('img,svg,picture,a')) block(e); }, true);
   document.addEventListener('keydown', e => {
     if (editable(e.target)) return;
     const key = String(e.key || '').toLowerCase();
     const mod = e.ctrlKey || e.metaKey;
-    const devtoolsCombo = (mod && e.shiftKey && ['i','j','c','k'].includes(key)) ||
-      (e.metaKey && e.altKey && ['i','j','c'].includes(key));
+    const devtoolsCombo = (mod && e.shiftKey && ['i','j','c','k'].includes(key)) || (e.metaKey && e.altKey && ['i','j','c'].includes(key));
     const protectedShortcut = mod && ['a','c','x','s','u','p'].includes(key);
     if (e.key === 'F12' || devtoolsCombo || protectedShortcut || e.key === 'PrintScreen') block(e);
   }, true);
@@ -191,81 +155,15 @@
     document.body.appendChild(el);
   };
 
-  /* ---------------------------------------------------------------------
-     v18 continuous-scroll section navigation
-     Lock a user-selected section hash while the smooth scroll is resolving.
-     This prevents the IntersectionObserver scroll-spy from racing the
-     address bar and falsely replacing the destination with a neighbouring
-     section during the animation.
-     --------------------------------------------------------------------- */
-  const nativeReplaceState = history.replaceState.bind(history);
-  let sectionNavLock = null;
-
-  history.replaceState = function(state, title, url) {
-    if (
-      sectionNavLock &&
-      performance.now() < sectionNavLock.until &&
-      typeof url === 'string' &&
-      /^#[A-Za-z][A-Za-z0-9_-]*$/.test(url) &&
-      url !== sectionNavLock.href
-    ) {
-      return nativeReplaceState(state, title, sectionNavLock.href);
-    }
-    return nativeReplaceState(state, title, url);
-  };
-
+  /*
+   * v18 is already a native one-document continuous page. Keep standard
+   * fragment navigation intact so the browser, keyboard users, deep links and
+   * the existing IntersectionObserver scroll-spy all share one source of truth.
+   * CSS supplies smooth scrolling and scroll-margin for the sticky header.
+   */
   const installContinuousNavigation = () => {
-    if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav === '1') return;
-    document.body.dataset.kpcgContinuousNav = '1';
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-
-    document.addEventListener('click', event => {
-      const anchor = event.target?.closest?.('a[href^="#"]');
-      if (!anchor) return;
-      const href = anchor.getAttribute('href') || '';
-      if (!/^#[A-Za-z][A-Za-z0-9_-]*$/.test(href)) return;
-      const target = document.getElementById(href.slice(1));
-      if (!target) return;
-
-      event.preventDefault();
-      const started = performance.now();
-      const travelMs = reducedMotion ? 160 : 2600;
-      const holdMs = reducedMotion ? 400 : 3600;
-      sectionNavLock = { href, until: started + holdMs };
-      nativeReplaceState(null, '', href);
-      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-
-      const settle = now => {
-        if (location.hash !== href) nativeReplaceState(null, '', href);
-        const header = document.getElementById('siteHeader');
-        const desiredTop = header ? Math.round(header.getBoundingClientRect().height) : 0;
-        const actualTop = Math.round(target.getBoundingClientRect().top);
-        const settled = Math.abs(actualTop - desiredTop) <= 28 || actualTop < 180;
-
-        if (!settled && now - started < travelMs) {
-          requestAnimationFrame(settle);
-          return;
-        }
-
-        if (!settled) {
-          const y = Math.max(0, window.scrollY + actualTop - desiredTop);
-          window.scrollTo({ top: y, behavior: 'auto' });
-        }
-        nativeReplaceState(null, '', href);
-
-        const keepCanonical = tick => {
-          if (!sectionNavLock || sectionNavLock.href !== href) return;
-          if (tick < sectionNavLock.until) {
-            if (location.hash !== href) nativeReplaceState(null, '', href);
-            requestAnimationFrame(keepCanonical);
-          } else {
-            sectionNavLock = null;
-          }
-        };
-        requestAnimationFrame(keepCanonical);
-      };
-      requestAnimationFrame(settle);
-    }, false);
+    if (root.dataset.release !== 'v18.0' || !document.body) return;
+    document.body.dataset.kpcgContinuousNav = 'native';
   };
 
   const loadEditorialRedesign = () => {
@@ -294,12 +192,10 @@
     installContinuousNavigation();
     loadEditorialRedesign();
   };
-
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootGuard, { once: true });
   else bootGuard();
 
   window.addEventListener('hashchange', queueThemeMount);
   window.addEventListener('pageshow', queueThemeMount);
-
   console.info('%cAYIVI PROTECTED PROTOTYPE', 'font-weight:700;color:#0b5139', VERSION);
 })();
