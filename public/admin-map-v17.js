@@ -2,7 +2,7 @@
   'use strict';
   const VERSION='17.2-adm3';
   const EXPERIENCE='19.0.1';
-  const CLIMATE='20.0.4';
+  const CLIMATE='20.0.5';
   const LABELS='20.2.0';
   const slugs=new Map();
   const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
