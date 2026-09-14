@@ -144,7 +144,7 @@
 (() => {
   if(document.querySelector('script[data-kpcg-admin-map]'))return;
   const script=document.createElement('script');
-  script.src='/admin-map-v17.js?v=17.2-adm3';
+  script.src='/admin-map-v17.js?v=19.0.0';
   script.defer=true;
   script.dataset.kpcgAdminMap='17.2-adm3';
   document.head.appendChild(script);

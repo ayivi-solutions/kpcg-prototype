@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const VERSION='17.2-adm3';
+  const EXPERIENCE='19.0.0';
   const slugs=new Map();
   const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const shapeName=shape=>{
@@ -19,7 +20,17 @@
       if(slug)shape.dataset.county=slug;
     });
   };
+  const loadExperience=()=>{
+    if(document.querySelector('script[data-kpcg-experience]'))return;
+    const script=document.createElement('script');
+    script.src=`/experience-v19.js?v=${EXPERIENCE}`;
+    script.defer=true;
+    script.dataset.kpcgExperience=EXPERIENCE;
+    script.onerror=()=>console.warn('[KPCG UX] experience layer failed to load');
+    document.head.appendChild(script);
+  };
   const install=()=>{
+    loadExperience();
     capture();
     annotate();
     const observer=new MutationObserver(records=>{
@@ -35,7 +46,7 @@
     observer.observe(document.body,{subtree:true,childList:true});
     if(document.querySelector('script[data-kpcg-admin-core]'))return;
     const core=document.createElement('script');
-    core.src='/admin-map-core-v17.js?v=17.2-adm3';
+    core.src='/admin-map-core-v17.js?v=19.0.0';
     core.defer=true;
     core.dataset.kpcgAdminCore=VERSION;
     core.addEventListener('load',()=>requestAnimationFrame(()=>annotate()));
