@@ -1,129 +1,29 @@
 /*
- * AYIVI Systems Limited — KPCG evaluation prototype guard + theme controller.
+ * AYIVI Systems Limited — KPCG evaluation prototype guard.
  * Deterrence only: browser-delivered code cannot be made impossible to inspect.
  */
 (() => {
   'use strict';
 
-  const VERSION = 'v18.2-theme-20260914';
+  const VERSION = 'v18.0-ipguard-20260913';
   const ALLOWED_HOSTS = new Set(['kpcg.ayivisolutions.com', 'localhost', '127.0.0.1']);
   const host = String(location.hostname || '').toLowerCase();
   const authorized = ALLOWED_HOSTS.has(host);
-  const root = document.documentElement;
 
   window.__AYIVI_IP_GUARD__ = Object.freeze({ version: VERSION, authorized, host });
-  root.classList.add('ayivi-ip-protected');
-  root.dataset.ayiviIpGuard = VERSION;
-  root.dataset.themeContract = 'v18.2';
-
-  const ensureThemeCorrectionStylesheet = () => {
-    if (document.head.querySelector('link[data-kpcg-theme-v18-2]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/theme-v18-2.css?v=18.2-20260914';
-    link.dataset.kpcgThemeV18_2 = '1';
-    document.head.appendChild(link);
-  };
-  ensureThemeCorrectionStylesheet();
-
-  const THEME_KEY = 'kpcg-theme';
-  const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-  const storedTheme = () => {
-    try {
-      const value = localStorage.getItem(THEME_KEY);
-      return value === 'light' || value === 'dark' ? value : null;
-    } catch (_) { return null; }
-  };
-  const resolvedSystemTheme = () => systemDark?.matches ? 'dark' : 'light';
-  const currentTheme = () => root.dataset.theme === 'dark' ? 'dark' : 'light';
-  const writeTheme = theme => { try { localStorage.setItem(THEME_KEY, theme); } catch (_) {} };
-  const setMetaContent = (name, value) => {
-    const meta = document.querySelector(`meta[name="${name}"]`);
-    if (meta && meta.getAttribute('content') !== value) meta.setAttribute('content', value);
-  };
-  const themeGlyph = theme => theme === 'dark' ? '☾' : '☀︎';
-  const syncThemeToggle = button => {
-    if (!button) return;
-    const theme = currentTheme();
-    const dark = theme === 'dark';
-    button.dataset.themeMode = theme;
-    button.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    button.setAttribute('aria-label', dark ? 'Switch to day mode' : 'Switch to night mode');
-    button.setAttribute('title', dark ? 'Night mode — switch to day mode' : 'Day mode — switch to night mode');
-    const glyph = button.querySelector('.kpcg-theme-glyph');
-    if (glyph) glyph.textContent = themeGlyph(theme);
-  };
-  const syncAllThemeToggles = () => document.querySelectorAll('.kpcg-theme-toggle').forEach(syncThemeToggle);
-  const applyTheme = (theme, { persist = false } = {}) => {
-    const next = theme === 'dark' ? 'dark' : 'light';
-    root.dataset.theme = next;
-    root.style.colorScheme = next;
-    root.classList.add('kpcg-theme-ready');
-    setMetaContent('theme-color', next === 'dark' ? '#0b1210' : '#0b5139');
-    setMetaContent('color-scheme', next);
-    if (persist) writeTheme(next);
-    syncAllThemeToggles();
-    window.dispatchEvent(new CustomEvent('kpcg:themechange', { detail: { theme: next, persisted: persist } }));
-    return next;
-  };
-  const toggleTheme = () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', { persist: true });
-  applyTheme(storedTheme() || resolvedSystemTheme());
-
-  const ensureThemeToggle = () => {
-    const actions = document.querySelector('.header-actions');
-    if (!actions) return;
-    let button = actions.querySelector('.kpcg-theme-toggle');
-    if (!button) {
-      button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'icon-btn kpcg-theme-toggle';
-      button.innerHTML = '<span class="kpcg-theme-glyph" aria-hidden="true"></span>';
-      button.addEventListener('click', toggleTheme);
-      const search = actions.querySelector('[data-open-search]');
-      const menu = actions.querySelector('#menuToggle,[data-menu-toggle]');
-      actions.insertBefore(button, search || menu || actions.firstChild);
-    }
-    syncThemeToggle(button);
-  };
-
-  let themeMountQueued = false;
-  const queueThemeMount = () => {
-    if (themeMountQueued) return;
-    themeMountQueued = true;
-    requestAnimationFrame(() => {
-      themeMountQueued = false;
-      ensureThemeToggle();
-    });
-  };
-
-  if (systemDark) {
-    const onSystemThemeChange = event => {
-      if (!storedTheme()) applyTheme(event.matches ? 'dark' : 'light');
-    };
-    if (typeof systemDark.addEventListener === 'function') systemDark.addEventListener('change', onSystemThemeChange);
-    else if (typeof systemDark.addListener === 'function') systemDark.addListener(onSystemThemeChange);
-  }
-  window.addEventListener('storage', event => {
-    if (event.key !== THEME_KEY) return;
-    const value = event.newValue;
-    applyTheme(value === 'light' || value === 'dark' ? value : resolvedSystemTheme());
-  });
-  window.KPCGTheme = Object.freeze({
-    get: currentTheme,
-    set: theme => applyTheme(theme, { persist: true }),
-    toggle: toggleTheme,
-    useSystem: () => {
-      try { localStorage.removeItem(THEME_KEY); } catch (_) {}
-      return applyTheme(resolvedSystemTheme());
-    }
-  });
+  document.documentElement.classList.add('ayivi-ip-protected');
+  document.documentElement.dataset.ayiviIpGuard = VERSION;
 
   const editable = target => Boolean(target?.closest?.('input,textarea,select,[contenteditable="true"]'));
-  const block = event => { event.preventDefault(); event.stopPropagation(); return false; };
+  const block = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  };
 
   if (!authorized) {
     const deny = () => {
-      root.classList.add('ayivi-ip-unauthorized');
+      document.documentElement.classList.add('ayivi-ip-unauthorized');
       document.body.innerHTML = '<main class="ayivi-ip-denied"><div><h1>Unauthorized deployment</h1><p>This AYIVI evaluation prototype is authorized only on the approved review domain. This copy is not an authorized KPCG/AYIVI deployment.</p></div></main>';
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', deny, { once: true });
@@ -135,12 +35,16 @@
   document.addEventListener('copy', e => editable(e.target) ? undefined : block(e), true);
   document.addEventListener('cut', e => editable(e.target) ? undefined : block(e), true);
   document.addEventListener('selectstart', e => editable(e.target) ? undefined : block(e), true);
-  document.addEventListener('dragstart', e => { if (e.target?.closest?.('img,svg,picture,a')) block(e); }, true);
+  document.addEventListener('dragstart', e => {
+    if (e.target?.closest?.('img,svg,picture,a')) block(e);
+  }, true);
+
   document.addEventListener('keydown', e => {
     if (editable(e.target)) return;
     const key = String(e.key || '').toLowerCase();
     const mod = e.ctrlKey || e.metaKey;
-    const devtoolsCombo = (mod && e.shiftKey && ['i','j','c','k'].includes(key)) || (e.metaKey && e.altKey && ['i','j','c'].includes(key));
+    const devtoolsCombo = (mod && e.shiftKey && ['i','j','c','k'].includes(key)) ||
+      (e.metaKey && e.altKey && ['i','j','c'].includes(key));
     const protectedShortcut = mod && ['a','c','x','s','u','p'].includes(key);
     if (e.key === 'F12' || devtoolsCombo || protectedShortcut || e.key === 'PrintScreen') block(e);
   }, true);
@@ -154,112 +58,7 @@
     document.body.appendChild(el);
   };
 
-  /*
-   * The public root is one continuous document. Keep section navigation and
-   * scroll-spy deterministic while ensuring the horizontal rail never causes
-   * a second vertical window scroll when its active item is centred.
-   */
-  const installContinuousNavigation = () => {
-    if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav) return;
-    document.body.dataset.kpcgContinuousNav = '1';
-
-    const rail = document.querySelector('.section-rail');
-    const links = [...document.querySelectorAll('.section-rail a[href^="#"]')];
-    const sections = [...document.querySelectorAll('.scroll-section[id]')];
-    const initialHash = location.hash || '#home';
-    const initialId = initialHash.startsWith('#/') ? initialHash.slice(2) : initialHash.slice(1);
-    let initialTarget = document.getElementById(initialId);
-    const initialGuardUntil = performance.now() + 4000;
-
-    const centreRailLink = link => {
-      if (!rail || !link) return;
-      const railRect = rail.getBoundingClientRect();
-      const linkRect = link.getBoundingClientRect();
-      const delta = (linkRect.left + linkRect.width / 2) - (railRect.left + railRect.width / 2);
-      rail.scrollTo({ left: Math.max(0, rail.scrollLeft + delta), behavior: 'smooth' });
-    };
-
-    links.forEach(link => {
-      link.scrollIntoView = () => centreRailLink(link);
-    });
-
-    const setSectionState = section => {
-      if (!section) return;
-      const href = `#${section.id}`;
-      for (const link of links) {
-        const active = link.getAttribute('href') === href;
-        link.classList.toggle('active', active);
-        if (active) link.setAttribute('aria-current', 'true');
-        else link.removeAttribute('aria-current');
-      }
-      if (location.hash !== href) history.replaceState(null, '', href);
-      const activeLink = links.find(link => link.getAttribute('href') === href);
-      centreRailLink(activeLink);
-    };
-
-    let syncQueued = false;
-    const syncFromViewport = () => {
-      syncQueued = false;
-      if (!sections.length) return;
-      const header = document.querySelector('.site-header');
-      const headerHeight = header ? header.getBoundingClientRect().height : 0;
-
-      // Preserve a direct/deprecated deep link while the root compatibility
-      // script is still scrolling it into place. Without this guard, the first
-      // scroll event can incorrectly rewrite #about (etc.) back to #home.
-      if (initialTarget && performance.now() < initialGuardUntil) {
-        const initialRect = initialTarget.getBoundingClientRect();
-        if (initialRect.top < 180) {
-          setSectionState(initialTarget);
-          initialTarget = null;
-        } else {
-          return;
-        }
-      } else {
-        initialTarget = null;
-      }
-
-      const probe = Math.min(innerHeight - 1, headerHeight + Math.max(28, innerHeight * .24));
-      let current = sections.find(section => {
-        const rect = section.getBoundingClientRect();
-        return rect.top <= probe && rect.bottom > probe;
-      });
-      if (!current) current = sections.reduce((best, section) => {
-        const distance = Math.abs(section.getBoundingClientRect().top - headerHeight);
-        return !best || distance < best.distance ? { section, distance } : best;
-      }, null)?.section;
-      setSectionState(current);
-    };
-    const queueSectionSync = () => {
-      if (syncQueued) return;
-      syncQueued = true;
-      requestAnimationFrame(syncFromViewport);
-    };
-
-    document.addEventListener('click', event => {
-      const anchor = event.target?.closest?.('.section-rail a[href^="#"]');
-      if (!anchor) return;
-      const href = anchor.getAttribute('href') || '';
-      if (!/^#[A-Za-z][A-Za-z0-9_-]*$/.test(href)) return;
-      const target = document.getElementById(href.slice(1));
-      if (!target) return;
-
-      initialTarget = null;
-      event.preventDefault();
-      const header = document.querySelector('.site-header');
-      const offset = header ? Math.round(header.getBoundingClientRect().height) : 0;
-      const y = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
-      history.replaceState(null, '', href);
-      window.scrollTo({ top: y, behavior: 'auto' });
-      requestAnimationFrame(queueSectionSync);
-    }, true);
-
-    window.addEventListener('scroll', queueSectionSync, { passive: true });
-    window.addEventListener('resize', queueSectionSync, { passive: true });
-  };
-
   const loadEditorialRedesign = () => {
-    if (!document.querySelector('#app')) return;
     if (document.querySelector('script[data-kpcg-editorial-loader]')) return;
     const script = document.createElement('script');
     script.src = '/editorial-redesign-v3.js?v=18.0-20260913';
@@ -269,25 +68,12 @@
     document.head.appendChild(script);
   };
 
-  const installThemeObserver = () => {
-    ensureThemeToggle();
-    const target = document.querySelector('#app') || document.body;
-    if (!target || target.dataset.kpcgThemeObserver === '1') return;
-    target.dataset.kpcgThemeObserver = '1';
-    const observer = new MutationObserver(queueThemeMount);
-    observer.observe(target, { childList: true, subtree: true });
-  };
-
-  const bootGuard = () => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { addWatermark(); loadEditorialRedesign(); }, { once: true });
+  } else {
     addWatermark();
-    installThemeObserver();
-    installContinuousNavigation();
     loadEditorialRedesign();
-  };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootGuard, { once: true });
-  else bootGuard();
+  }
 
-  window.addEventListener('hashchange', queueThemeMount);
-  window.addEventListener('pageshow', queueThemeMount);
   console.info('%cAYIVI PROTECTED PROTOTYPE', 'font-weight:700;color:#0b5139', VERSION);
 })();

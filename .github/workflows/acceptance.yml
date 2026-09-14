@@ -34,13 +34,13 @@ jobs:
       - name: Validate proposed production architecture reference
         run: node scripts/validate-production-reference.mjs
 
-      - name: Enforce v18 root and preserved-v17 official-media quality
+      - name: Enforce official-media quality and visual uniqueness
         run: npm run acceptance:assets
 
       - name: Run strict release verification
         run: npm run verify:strict
 
-      - name: Emit v18 continuous-root and v17 fallback acceptance artifacts
+      - name: Emit consolidated v17 acceptance artifacts
         run: node scripts/acceptance-smoke.mjs --strict-assets --emit-artifacts
 
       - name: Install browser QA tooling
@@ -48,7 +48,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run continuous-scroll, compatibility, theme, service-worker and IP-guard QA
+      - name: Run desktop/mobile, keyboard-map, service-worker and IP-guard QA
         shell: bash
         run: |
           set -euo pipefail
@@ -69,21 +69,20 @@ jobs:
             exit 1
           fi
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
-          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/theme-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/ip-hardening-smoke.mjs
 
           export CHROME_PATH="$(node -e "const {chromium}=require('playwright');process.stdout.write(chromium.executablePath())")"
-          npx --yes lighthouse@13.4.1 'http://127.0.0.1:8787/#home' \
+          npx --yes lighthouse@13.4.1 'http://127.0.0.1:8787/#/home' \
             --output=json --output=html --output-path=artifacts/lighthouse-mobile \
             --chrome-flags='--headless --no-sandbox' --quiet
           node scripts/lighthouse-gate.mjs artifacts/lighthouse-mobile.report.json
 
-      - name: Upload v18 acceptance evidence
+      - name: Upload v17 acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v18-acceptance-${{ github.run_id }}
+          name: kpcg-v17-acceptance-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30
@@ -111,7 +110,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Wait for Cloudflare to expose continuous-scroll release
+      - name: Wait for Cloudflare to expose consolidated v17
         shell: bash
         run: |
           set -euo pipefail
@@ -120,31 +119,25 @@ jobs:
           for attempt in {1..30}; do
             release_query="release=${GITHUB_SHA}-${attempt}"
             source="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/?${release_query}" || true)"
-            legacy="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/legacy.html?${release_query}" || true)"
             sw="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/sw.js?${release_query}" || true)"
-            guard="$(curl --fail --silent --show-error --max-time 20 -H 'Cache-Control: no-cache' "${KPCG_PRODUCTION_URL}/ip-guard.js?${release_query}" || true)"
-            if grep -q 'data-release="v18.0"' <<<"$source" \
-              && grep -q 'class="section-rail"' <<<"$source" \
-              && grep -q 'id="where-we-work"' <<<"$source" \
+            if grep -q 'data-release="v17.0"' <<<"$source" \
+              && grep -q 'data-prerendered-home' <<<"$source" \
               && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
-              && grep -q '/ip-guard.js?v=18.1' <<<"$source" \
-              && grep -q 'data-release="v17.0"' <<<"$legacy" \
-              && grep -q "const RELEASE='kpcg-v18.2-theme-20260914'" <<<"$sw" \
-              && grep -q "const VERSION = 'v18.2-theme-20260914'" <<<"$guard"; then
+              && grep -q '/ip-guard.js?v=17.1' <<<"$source" \
+              && grep -q 'kpcg-v17.0-20260913' <<<"$sw"; then
               ready=1
               break
             fi
             sleep 10
           done
           if [ "$ready" -ne 1 ]; then
-            echo 'Cloudflare production did not expose the v18 continuous-scroll release within the verification window.'
+            echo 'Cloudflare production did not expose the consolidated v17 IP-hardened release within the verification window.'
             exit 1
           fi
 
-      - name: Run production continuous-scroll, compatibility, theme and IP-protection QA
+      - name: Run production browser, keyboard and IP-protection QA
         run: |
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/browser-smoke.mjs
-          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/theme-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/ip-hardening-smoke.mjs
 
@@ -153,7 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           export CHROME_PATH="$(node -e "const {chromium}=require('playwright');process.stdout.write(chromium.executablePath())")"
-          npx --yes lighthouse@13.4.1 "${KPCG_PRODUCTION_URL}/#home" \
+          npx --yes lighthouse@13.4.1 "${KPCG_PRODUCTION_URL}/#/home" \
             --output=json --output=html --output-path=artifacts/lighthouse-production-mobile \
             --chrome-flags='--headless --no-sandbox' --quiet
           node scripts/lighthouse-gate.mjs artifacts/lighthouse-production-mobile.report.json
@@ -162,7 +155,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kpcg-v18-production-${{ github.run_id }}
+          name: kpcg-v17-production-${{ github.run_id }}
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 30
