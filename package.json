@@ -1,8 +1,8 @@
 {
   "name": "kpcg-prototype",
-  "version": "20.0.0",
+  "version": "21.0.0",
   "private": true,
-  "description": "KPCG public prototype: consolidated source-visible application deployed with Cloudflare Workers Static Assets.",
+  "description": "KPCG public prototype: Kenya climate, health, governance and accountability intelligence platform deployed with Cloudflare Workers Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
     "admin:sync": "node scripts/sync-admin-boundaries.mjs",
