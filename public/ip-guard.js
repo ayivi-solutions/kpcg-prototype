@@ -43,7 +43,7 @@
 
   const setMetaContent = (name, value) => {
     const meta = document.querySelector(`meta[name="${name}"]`);
-    if (meta) meta.setAttribute('content', value);
+    if (meta && meta.getAttribute('content') !== value) meta.setAttribute('content', value);
   };
 
   const themeGlyph = theme => theme === 'dark' ? '☀︎' : '☾';
@@ -52,11 +52,15 @@
     if (!button) return;
     const theme = currentTheme();
     const dark = theme === 'dark';
-    button.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    button.setAttribute('aria-label', dark ? 'Switch to day mode' : 'Switch to night mode');
-    button.setAttribute('title', dark ? 'Day mode' : 'Night mode');
+    const pressed = dark ? 'true' : 'false';
+    const label = dark ? 'Switch to day mode' : 'Switch to night mode';
+    const title = dark ? 'Day mode' : 'Night mode';
+    if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
+    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+    if (button.getAttribute('title') !== title) button.setAttribute('title', title);
     const glyph = button.querySelector('.kpcg-theme-glyph');
-    if (glyph) glyph.textContent = themeGlyph(theme);
+    const nextGlyph = themeGlyph(theme);
+    if (glyph && glyph.textContent !== nextGlyph) glyph.textContent = nextGlyph;
   };
 
   const syncAllThemeToggles = () => {
@@ -65,8 +69,8 @@
 
   const applyTheme = (theme, { persist = false } = {}) => {
     const next = theme === 'dark' ? 'dark' : 'light';
-    root.dataset.theme = next;
-    root.style.colorScheme = next;
+    if (root.dataset.theme !== next) root.dataset.theme = next;
+    if (root.style.colorScheme !== next) root.style.colorScheme = next;
     root.classList.add('kpcg-theme-ready');
     setMetaContent('theme-color', next === 'dark' ? '#0b1210' : '#0b5139');
     setMetaContent('color-scheme', next);
@@ -187,10 +191,11 @@
 
   const installThemeObserver = () => {
     ensureThemeToggle();
-    if (!document.body || document.body.dataset.kpcgThemeObserver === '1') return;
-    document.body.dataset.kpcgThemeObserver = '1';
+    const target = document.querySelector('#app') || document.body;
+    if (!target || target.dataset.kpcgThemeObserver === '1') return;
+    target.dataset.kpcgThemeObserver = '1';
     const observer = new MutationObserver(queueThemeMount);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(target, { childList: true, subtree: true });
   };
 
   if (document.readyState === 'loading') {
