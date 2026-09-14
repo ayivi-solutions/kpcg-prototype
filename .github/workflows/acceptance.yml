@@ -129,8 +129,8 @@ jobs:
               && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
               && grep -q '/ip-guard.js?v=18.1' <<<"$source" \
               && grep -q 'data-release="v17.0"' <<<"$legacy" \
-              && grep -q 'kpcg-v18.0-continuous-20260914' <<<"$sw" \
-              && grep -q 'v18.1-theme-20260914' <<<"$guard"; then
+              && grep -q "const RELEASE='kpcg-v18.2-theme-20260914'" <<<"$sw" \
+              && grep -q "const VERSION = 'v18.2-theme-20260914'" <<<"$guard"; then
               ready=1
               break
             fi
