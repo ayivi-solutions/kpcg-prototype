@@ -155,10 +155,9 @@
   };
 
   /*
-   * The public root is a single continuous document. The section rail is a
-   * navigation accelerator, not pagination. Resolve its selected section
-   * deterministically so scroll-spy cannot replace the user's chosen hash
-   * while the browser is moving to the section.
+   * The public root is one continuous document. Rail clicks land directly on
+   * the selected section; the page's IntersectionObserver remains authoritative
+   * for hash/active-state updates during normal scrolling immediately after.
    */
   const installContinuousNavigation = () => {
     if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav) return;
@@ -178,13 +177,6 @@
       const y = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
       history.replaceState(null, '', href);
       window.scrollTo({ top: y, behavior: 'auto' });
-
-      const holdUntil = performance.now() + 650;
-      const hold = now => {
-        if (location.hash !== href) history.replaceState(null, '', href);
-        if (now < holdUntil) requestAnimationFrame(hold);
-      };
-      requestAnimationFrame(hold);
     }, true);
   };
 
