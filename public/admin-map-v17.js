@@ -1,0 +1,88 @@
+(()=>{
+'use strict';
+const VERSION='17.2-adm3';
+const ROOT='/data/admin';
+const PIN='9469f09';
+const W=620,H=720,PAD=24;
+const COLORS=['#238c78','#4daf5a','#3b84bd','#f1b94f','#7c66aa','#d96252','#6a9bd1','#cc6790','#54b6c3','#e78b2f','#64a857','#aa73bc','#dcaa26','#32967e','#c47739','#6997c8'];
+const cache=new Map();
+const remote=level=>`https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/${PIN}/releaseData/gbOpen/KEN/ADM${level}/geoBoundaries-KEN-ADM${level}_simplified.topojson`;
+const css=`
+.map-panel.kpcg-adm{position:relative;padding:0!important;min-height:660px;overflow:hidden;background:#e9f5ee;border:1px solid #cbded4;border-radius:20px}
+.kpcg-adm .amap{height:720px}.kpcg-adm svg{width:100%;height:100%;display:block}
+.kpcg-adm .ashape{stroke:#fff;stroke-width:1.35;vector-effect:non-scaling-stroke;cursor:pointer;outline:none;transition:filter .16s ease,stroke-width .16s ease,stroke .16s ease}
+.kpcg-adm .ashape:hover,.kpcg-adm .ashape:focus-visible,.kpcg-adm .ashape.sel{stroke:#102a22;stroke-width:2.8;filter:saturate(1.16) brightness(.94)}
+.kpcg-adm .aview{transform-origin:310px 360px;transition:transform .25s ease}
+.kpcg-adm .acontrol{position:absolute;z-index:8;right:14px;top:14px;display:grid;gap:8px}
+.kpcg-adm .acontrol button{width:46px;height:46px;border:1px solid #ccd8d1;border-radius:12px;background:#fff;color:#17211d;font-weight:900;font-size:1.1rem;box-shadow:0 6px 18px #17352a12}
+.kpcg-adm .abar{position:absolute;z-index:8;left:14px;right:70px;top:14px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.kpcg-adm .crumbs{display:flex;gap:5px;align-items:center;flex-wrap:wrap;background:#fffffff2;border:1px solid #d4e0da;border-radius:11px;padding:6px 8px;box-shadow:0 6px 18px #17352a12}
+.kpcg-adm .crumbs button{border:0;background:none;color:#0b5139;font-weight:800;padding:4px 5px;cursor:pointer}
+.kpcg-adm .crumbs button[aria-current=page]{text-decoration:underline;text-underline-offset:3px}
+.kpcg-adm .lvl{background:#102a22;color:#fff;border-radius:99px;padding:7px 9px;font-size:.7rem;font-weight:800}
+.kpcg-adm .abottom{position:absolute;z-index:8;left:14px;right:14px;bottom:14px;display:grid;gap:7px}
+.kpcg-adm .alist{display:flex;gap:6px;overflow:auto;padding:2px;scrollbar-width:thin}
+.kpcg-adm .alist button{flex:0 0 auto;border:1px solid #ccd8d1;border-radius:99px;background:#fff;color:#17211d;padding:7px 10px;font-size:.7rem;font-weight:750;cursor:pointer}
+.kpcg-adm .alist button:hover,.kpcg-adm .alist button.sel{background:#0b5139;color:#fff}
+.kpcg-adm .asum{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fffffff2;border:1px solid #d4e0da;border-radius:11px;padding:9px 11px;font-size:.73rem;color:#52665d}
+.kpcg-adm .asum strong{color:#17211d}.kpcg-adm .profile{border:0;border-radius:8px;background:#0b5139;color:#fff;padding:7px 9px;font-weight:800;cursor:pointer}
+.kpcg-adm .evidence{position:absolute;left:14px;bottom:90px;z-index:7;background:#ffffffdf;border-radius:8px;padding:6px 8px;font-size:.62rem;color:#5b7067;max-width:75%}
+.kpcg-adm .tip{position:absolute;z-index:12;display:none;background:#17211d;color:#fff;border-radius:9px;padding:8px 10px;font-size:.72rem;max-width:280px;pointer-events:none;box-shadow:0 8px 24px #0002}
+.kpcg-adm .tip.on{display:block}.kpcg-adm .centre0{fill:#fff;stroke:#17342a;stroke-width:1.6;vector-effect:non-scaling-stroke}.kpcg-adm .centre{fill:#17342a;stroke:#fff;stroke-width:1;vector-effect:non-scaling-stroke;cursor:pointer}.kpcg-adm .centre.nat{fill:#a84a2a}
+html[data-theme=dark] .map-panel.kpcg-adm{background:#102019;border-color:#2b3d35}html[data-theme=dark] .kpcg-adm .crumbs,html[data-theme=dark] .kpcg-adm .asum,html[data-theme=dark] .kpcg-adm .alist button,html[data-theme=dark] .kpcg-adm .acontrol button{background:#14211df2;color:#edf5f1;border-color:#365044}html[data-theme=dark] .kpcg-adm .crumbs button{color:#78d6ab}html[data-theme=dark] .kpcg-adm .asum{color:#b9c9c1}html[data-theme=dark] .kpcg-adm .asum strong{color:#edf5f1}html[data-theme=dark] .kpcg-adm .evidence{background:#14211dde;color:#b9c9c1}
+@media(max-width:720px){.map-panel.kpcg-adm,.kpcg-adm .amap{min-height:660px;height:660px}.kpcg-adm .lvl{display:none}.kpcg-adm .profile{display:none}.kpcg-adm .evidence{max-width:66%;font-size:.58rem}.kpcg-adm .abar{right:64px}}
+@media(prefers-reduced-motion:reduce){.kpcg-adm .ashape,.kpcg-adm .aview{transition:none!important}}
+`;
+function installStyle(){if(document.querySelector('#kpcg-adm-css'))return;const s=document.createElement('style');s.id='kpcg-adm-css';s.textContent=css;document.head.append(s)}
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+async function json(url){if(cache.has(url))return cache.get(url);const promise=fetch(url,{cache:'force-cache'}).then(response=>{if(!response.ok)throw new Error(`${response.status} ${url}`);return response.json()});cache.set(url,promise);return promise}
+async function topo(level){try{return await json(`${ROOT}/adm${level}.topo.json`)}catch(error){console.warn('[KPCG ADM] local geometry unavailable; using checksum-pinned source',error);return json(remote(level))}}
+function decode(topology){
+  const transform=topology.transform||{scale:[1,1],translate:[0,0]};
+  const arcs=topology.arcs.map(arc=>{let x=0,y=0;return arc.map(point=>{x+=point[0];y+=point[1];return[x*transform.scale[0]+transform.translate[0],y*transform.scale[1]+transform.translate[1]]})});
+  const object=topology.objects[Object.keys(topology.objects)[0]];
+  const getArc=index=>index<0?[...(arcs[~index]||[])].reverse():(arcs[index]||[]);
+  const ring=indexes=>{const out=[];indexes.forEach((index,i)=>{let part=getArc(index);if(i&&out.length&&part.length&&out.at(-1)[0]===part[0][0]&&out.at(-1)[1]===part[0][1])part=part.slice(1);out.push(...part)});return out};
+  return object.geometries.map(geometry=>({id:geometry.properties.shapeID,name:geometry.properties.shapeName,type:geometry.properties.shapeType,polys:geometry.type==='Polygon'?[geometry.arcs.map(ring)]:geometry.arcs.map(poly=>poly.map(ring))}));
+}
+function projector(features){
+  const points=[];features.forEach(feature=>feature.polys.forEach(poly=>poly.forEach(ring=>points.push(...ring))));
+  const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const dx=Math.max(.001,maxX-minX),dy=Math.max(.001,maxY-minY),scale=Math.min((W-PAD*2)/dx,(H-PAD*2)/dy);
+  const offsetX=(W-dx*scale)/2-minX*scale,offsetY=(H-dy*scale)/2+maxY*scale;
+  return point=>[point[0]*scale+offsetX,offsetY-point[1]*scale];
+}
+function svgPath(feature,project){let d='';feature.polys.forEach(poly=>poly.forEach(ring=>{if(!ring.length)return;const pts=ring.map(project);d+=`M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;for(let i=1;i<pts.length;i++)d+=`L${pts[i][0].toFixed(1)},${pts[i][1].toFixed(1)}`;d+='Z'}));return d}
+function captureLegacy(panel){
+  const colors=new Map(),slugs=new Map(),centres=[];
+  panel.querySelectorAll('.county-shape').forEach(shape=>{const title=shape.parentElement?.querySelector('title')?.textContent||shape.getAttribute('aria-label')||'';const name=title.split(/ - | county:/i)[0].trim();if(name){colors.set(norm(name),shape.getAttribute('fill')||'');if(shape.dataset.county)slugs.set(norm(name),shape.dataset.county)}});
+  panel.querySelectorAll('.capital-marker').forEach(marker=>{const text=marker.dataset.tip||marker.getAttribute('aria-label')||'';const match=text.match(/([0-9.]+)[^NS]*([NS])[^0-9]+([0-9.]+)[^EW]*([EW])/i);if(!match)return;const parts=text.split(/\s[|\-]\s|\s+administrative centre/i).map(v=>v.trim()).filter(Boolean);centres.push({capital:parts[0]||'',county:parts[1]||'',lat:+match[1]*(match[2].toUpperCase()==='S'?-1:1),lon:+match[3]*(match[4].toUpperCase()==='W'?-1:1),national:marker.classList.contains('national')})});
+  return{colors,slugs,centres};
+}
+class AdminMap{
+  constructor(panel,legacy){this.panel=panel;this.legacy=legacy;this.level=1;this.county=null;this.subcounty=null;this.selected=null;this.zoom=1;this.data={};this.hierarchy=null}
+  async init(){this.panel.dataset.adminEnhanced=VERSION;this.panel.classList.add('kpcg-adm');this.panel.innerHTML='<div style="height:660px;display:grid;place-items:center;color:#496158">Loading Kenya administrative boundaries...</div>';try{const[adm1,hierarchy]=await Promise.all([topo(1),json(`${ROOT}/hierarchy-index.json`)]);this.data[1]=decode(adm1);this.hierarchy=hierarchy;this.render()}catch(error){console.error('[KPCG ADM] initialization failed',error);this.panel.innerHTML='<div style="padding:32px">Administrative map unavailable. County navigation remains available.</div>'}}
+  async ensure(level){if(!this.data[level])this.data[level]=decode(await topo(level))}
+  unit(level,id){return(this.data[level]||[]).find(item=>item.id===id)}
+  featureIndex(level,id){return(this.data[level]||[]).findIndex(item=>item.id===id)}
+  features(){if(this.level<2)return this.data[this.level]||[];if(this.level===2){const countyIndex=this.featureIndex(1,this.county);return(this.data[2]||[]).filter((item,index)=>this.hierarchy.parentIndex.ADM2[index]===countyIndex)}const subIndex=this.featureIndex(2,this.subcounty);return(this.data[3]||[]).filter((item,index)=>this.hierarchy.parentIndex.ADM3[index]===subIndex)}
+  childCount(level,id){if(level===0)return 47;if(level===1){const index=this.featureIndex(1,id);return this.hierarchy.parentIndex.ADM2.filter(parent=>parent===index).length}if(level===2){const index=this.featureIndex(2,id);return this.hierarchy.parentIndex.ADM3.filter(parent=>parent===index).length}return 0}
+  levelLabel(){return['ADM0 - Country','ADM1 - Counties','ADM2 - Sub-Counties','ADM3 - Wards'][this.level]}
+  countySlug(){const county=this.unit(1,this.county);return county?this.legacy.slugs.get(norm(county.name))||'':''}
+  breadcrumbs(){const county=this.unit(1,this.county),sub=this.unit(2,this.subcounty);let out=`<button data-back="0" ${this.level===0?'aria-current="page"':''}>Kenya</button>`;if(this.level>=1)out+=`<span>/</span><button data-back="1" ${this.level===1?'aria-current="page"':''}>Counties</button>`;if(county)out+=`<span>/</span><button data-back="2" ${this.level===2?'aria-current="page"':''}>${esc(county.name)}</button>`;if(sub)out+=`<span>/</span><button aria-current="page">${esc(sub.name)}</button>`;return out}
+  fill(feature,index){if(this.level===0)return'#176b50';if(this.level===1)return this.legacy.colors.get(norm(feature.name))||COLORS[index%COLORS.length];const seed=[...feature.id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0);return COLORS[(seed+index)%COLORS.length]}
+  renderSvg(){const features=this.features(),project=projector(features);const shapes=features.map((feature,index)=>{const children=this.childCount(this.level,feature.id);const role=['Country','County','Sub-County','Ward'][this.level];const childText=children?`, ${children} ${this.level===0?'counties':this.level===1?'sub-counties':'wards'}`:'';return`<path class="ashape${this.level===1?' county-shape':''}${this.selected===feature.id?' sel':''}" tabindex="0" role="button" data-shape="${esc(feature.id)}" aria-label="${esc(feature.name)} ${role}${childText}" d="${svgPath(feature,project)}" fill="${this.fill(feature,index)}" fill-rule="evenodd"><title>${esc(feature.name)} - ${role}${childText}</title></path>`}).join('');let centres='';if(this.level===1)centres=this.legacy.centres.map(centre=>{const point=project([centre.lon,centre.lat]);return`<g><circle class="centre0" cx="${point[0]}" cy="${point[1]}" r="5.5"/><circle class="centre${centre.national?' nat':''}" tabindex="0" role="img" aria-label="${esc(`${centre.capital} - ${centre.county} administrative centre`)}" data-tip="${esc(`${centre.capital} - ${centre.county} administrative centre`)}" cx="${point[0]}" cy="${point[1]}" r="3.5"/></g>`}).join('');return`<svg viewBox="0 0 ${W} ${H}" aria-label="Interactive Kenya administrative map, ${this.levelLabel()}"><g class="aview" style="transform:scale(${this.zoom})">${shapes}${centres}</g></svg>`}
+  summary(){const features=this.features(),county=this.unit(1,this.county),sub=this.unit(2,this.subcounty),ward=this.unit(3,this.selected);const title=this.level===0?'Republic of Kenya':this.level===1?`${features.length} counties`:this.level===2?`${features.length} sub-counties in ${county?.name||''}`:`${features.length} wards in ${sub?.name||''}`;const hint=this.level<3?'Select a boundary to drill down.':ward?`${ward.name} selected.`:'Select a ward to inspect it.';const slug=this.countySlug();return`<span><strong>${esc(title)}</strong> - ${esc(hint)}</span>${slug&&this.level>1?`<button class="profile" data-profile="#/county/${esc(slug)}">Open county profile</button>`:''}`}
+  render(){const list=this.features().slice().sort((a,b)=>a.name.localeCompare(b.name)).map(item=>`<button data-shape="${esc(item.id)}" class="${this.selected===item.id?'sel':''}">${esc(item.name)}</button>`).join('');this.panel.innerHTML=`<div class="abar"><div class="crumbs">${this.breadcrumbs()}</div><span class="lvl">${this.levelLabel()}</span></div><div class="amap">${this.renderSvg()}<div class="acontrol"><button data-zoom="in" aria-label="Zoom in">+</button><button data-zoom="out" aria-label="Zoom out">-</button><button data-zoom="reset" aria-label="Reset zoom">R</button></div><div class="tip" role="status"></div><div class="evidence">geoBoundaries Kenya evidence - ADM0 country - ADM1 47 counties - ADM2 290 sub-counties - ADM3 1,452 wards</div><div class="abottom"><div class="alist" aria-label="Administrative units at current level">${list}</div><div class="asum">${this.summary()}</div></div></div>`;this.bind()}
+  bind(){const tip=this.panel.querySelector('.tip');const showTip=(target,event)=>{tip.textContent=target.dataset.tip||target.getAttribute('aria-label')||'';const rect=this.panel.getBoundingClientRect();const x=event?.clientX||rect.left+rect.width/2,y=event?.clientY||rect.top+rect.height/2;tip.style.left=Math.max(10,Math.min(rect.width-290,x-rect.left+10))+'px';tip.style.top=Math.max(58,Math.min(rect.height-76,y-rect.top+10))+'px';tip.classList.add('on')};const hideTip=()=>tip.classList.remove('on');this.panel.querySelectorAll('[data-shape]').forEach(target=>{const id=target.dataset.shape;if(!id)return;target.addEventListener('pointerenter',event=>showTip(target,event));target.addEventListener('pointermove',event=>showTip(target,event));target.addEventListener('pointerleave',hideTip);target.addEventListener('focus',event=>showTip(target,event));target.addEventListener('blur',hideTip);target.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();this.choose(id)});target.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();this.choose(id)}})});this.panel.querySelectorAll('[data-back]').forEach(button=>button.addEventListener('click',()=>this.go(Number(button.dataset.back))));this.panel.querySelectorAll('[data-zoom]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.zoom;this.zoom=action==='reset'?1:action==='in'?Math.min(2.2,this.zoom+.2):Math.max(.8,this.zoom-.2);const view=this.panel.querySelector('.aview');if(view)view.style.transform=`scale(${this.zoom})`}));const profile=this.panel.querySelector('[data-profile]');if(profile)profile.addEventListener('click',()=>{location.hash=profile.dataset.profile.slice(1)})}
+  async choose(id){if(this.level===0){await this.ensure(1);this.level=1;this.county=this.subcounty=this.selected=null}else if(this.level===1){this.county=id;this.subcounty=this.selected=null;await this.ensure(2);this.level=2}else if(this.level===2){this.subcounty=id;this.selected=null;await this.ensure(3);this.level=3}else{this.selected=id}this.zoom=1;this.render()}
+  async go(level){if(level===0){await this.ensure(0);this.level=0;this.county=this.subcounty=this.selected=null}else if(level===1){await this.ensure(1);this.level=1;this.county=this.subcounty=this.selected=null}else if(level===2&&this.county){this.level=2;this.subcounty=this.selected=null}else return;this.zoom=1;this.render()}
+}
+const enhanced=new WeakSet();
+function enhance(panel){if(enhanced.has(panel)||panel.dataset.adminEnhanced||!panel.querySelector('.county-shape'))return;enhanced.add(panel);new AdminMap(panel,captureLegacy(panel)).init()}
+function scan(root=document){if(root.matches?.('.map-panel'))enhance(root);root.querySelectorAll?.('.map-panel').forEach(enhance)}
+function start(){installStyle();scan();new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)scan(node)}))).observe(document.body,{subtree:true,childList:true});window.KPCGAdminMap=Object.freeze({version:VERSION,rescan:()=>scan()})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();

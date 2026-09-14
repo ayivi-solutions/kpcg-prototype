@@ -4,6 +4,9 @@
   "compatibility_date": "2026-09-11",
   "workers_dev": false,
   "preview_urls": false,
+  "build": {
+    "command": "npm run admin:prepare"
+  },
   "assets": {
     "directory": "./public",
     "not_found_handling": "single-page-application",
