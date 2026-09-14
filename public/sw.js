@@ -6,6 +6,7 @@ const APP_SHELL=[
   '/manifest.webmanifest',
   '/ip-guard.css',
   '/ip-guard.js',
+  '/theme-v18-2.css',
   '/motion-system.css',
   '/motion-system.js',
   '/editorial-redesign-v3.js',
