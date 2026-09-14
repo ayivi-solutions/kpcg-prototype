@@ -8,6 +8,13 @@ const APP_SHELL=[
   '/ip-guard.css',
   '/ip-guard.js',
   '/editorial-redesign-v3.js',
+  '/admin-map-v17.js',
+  '/data/admin/adm0.topo.json',
+  '/data/admin/adm1.topo.json',
+  '/data/admin/adm2.topo.json',
+  '/data/admin/adm3.topo.json',
+  '/data/admin/hierarchy-index.json',
+  '/data/admin/provenance.json',
   '/favicon.ico',
   '/favicon-32x32.png',
   '/apple-touch-icon.png',
@@ -68,7 +75,7 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  if(SHELL_PATHS.has(url.pathname)||url.pathname.startsWith('/assets/')){
+  if(SHELL_PATHS.has(url.pathname)||url.pathname.startsWith('/assets/')||url.pathname.startsWith('/data/admin/')){
     event.respondWith(networkFirst(request));
   }
 });

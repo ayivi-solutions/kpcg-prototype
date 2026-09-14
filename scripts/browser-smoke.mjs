@@ -15,7 +15,7 @@ const expectedRelease='v17.0';
 const expectedSW='kpcg-v17.0-theme-20260914';
 const firstHero='/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg';
 const profiles=[{name:'desktop',viewport:{width:1440,height:900}},{name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}];
-const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$)|ip-guard\.(?:css|js)(?:\?|$)|editorial-redesign-v3\.js(?:\?|$))/;
+const releaseCritical=/\/(?:assets\/|data\/admin\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$)|ip-guard\.(?:css|js)(?:\?|$)|editorial-redesign-v3\.js(?:\?|$)|admin-map-v17\.js(?:\?|$))/;
 
 fs.mkdirSync(artifactDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
@@ -43,7 +43,9 @@ const verifySource=async context=>{
   if(motionResponses.some(item=>item.status()!==200))throw new Error('site-wide motion assets unavailable');
   const themeResponses=await Promise.all(['css','js'].map(ext=>context.request.get(`${baseURL}/ip-guard.${ext}?qa=${Date.now()}`)));
   if(themeResponses.some(item=>item.status()!==200))throw new Error('site-wide theme/guard assets unavailable');
-  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,motionAssets:motionResponses.map(item=>item.status()),themeAssets:themeResponses.map(item=>item.status()),firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
+  const adminResponses=await Promise.all(['/admin-map-v17.js','/data/admin/hierarchy-index.json','/data/admin/provenance.json'].map(item=>context.request.get(`${baseURL}${item}?qa=${Date.now()}`)));
+  if(adminResponses.some(item=>item.status()!==200))throw new Error('administrative hierarchy assets unavailable');
+  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,motionAssets:motionResponses.map(item=>item.status()),themeAssets:themeResponses.map(item=>item.status()),adminAssets:adminResponses.map(item=>item.status()),firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
 };
 
 const verifyBrowserCancelledAssets=async(context,failedRequests)=>{
@@ -122,14 +124,13 @@ try{
     }
 
     await page.evaluate(()=>{location.hash='#/where-we-work';});
-    await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('path.county-shape[data-county][tabindex="0"]')),null,{timeout:18000});
-    const firstCounty=page.locator('path.county-shape[data-county][tabindex="0"]').first();
-    const countySlug=await firstCounty.getAttribute('data-county');
+    await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('.map-panel[data-admin-enhanced="17.2-adm3"] .ashape')),null,{timeout:20000});
+    const firstCounty=page.locator('.kpcg-adm .ashape').first();
     await firstCounty.focus();
     await firstCounty.press('Enter');
-    await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:12000});
-    const keyboardMapPassed=await page.evaluate(slug=>location.hash===`#/county/${slug}`,countySlug);
-    if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county activation failed`);
+    await page.waitForFunction(()=>/ADM2/.test(document.querySelector('.kpcg-adm .lvl')?.textContent||'')&&document.querySelectorAll('.kpcg-adm .ashape').length>0,null,{timeout:12000});
+    const keyboardMapPassed=await page.evaluate(()=>/ADM2/.test(document.querySelector('.kpcg-adm .lvl')?.textContent||'')&&document.querySelectorAll('.kpcg-adm .ashape').length>0);
+    if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county drill-down failed`);
 
     const manifestResponse=await context.request.get(`${baseURL}/manifest.webmanifest`);
     const manifest=await manifestResponse.json();
@@ -157,4 +158,4 @@ try{
 
 const summary={release:expectedRelease,mode:productionMode?'production':'preview',commitSha,baseURL,generatedAt:new Date().toISOString(),releaseEvidence,desktopPassed:results.some(x=>x.profile==='desktop'&&x.passed),mobilePassed:results.some(x=>x.profile==='mobile'&&x.passed),keyboardMapPassed:results.filter(x=>x.profile).every(x=>x.keyboardMapPassed),passed:!failed&&results.every(x=>x.passed),results};
 fs.writeFileSync(outputPath,JSON.stringify(summary,null,2)+'\n');
-if(!summary.passed){console.error(`KPCG ${expectedRelease} browser smoke failed; see ${path.relative(root,outputPath)}`);process.exitCode=1}else console.log(`PASS KPCG ${expectedRelease} browser smoke: desktop + mobile + 15-slide hero + keyboard county map + theme toggle.`);
+if(!summary.passed){console.error(`KPCG ${expectedRelease} browser smoke failed; see ${path.relative(root,outputPath)}`);process.exitCode=1}else console.log(`PASS KPCG ${expectedRelease} browser smoke: desktop + mobile + 15-slide hero + keyboard ADM drill-down + theme toggle.`);

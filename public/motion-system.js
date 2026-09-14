@@ -138,3 +138,14 @@
   addEventListener('hashchange',routeEnter);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
+
+// Administrative hierarchy extension. Kept separate from the core app so the
+// supplied geoBoundaries evidence can evolve without rebuilding the SPA bundle.
+(() => {
+  if(document.querySelector('script[data-kpcg-admin-map]'))return;
+  const script=document.createElement('script');
+  script.src='/admin-map-v17.js?v=17.2-adm3';
+  script.defer=true;
+  script.dataset.kpcgAdminMap='17.2-adm3';
+  document.head.appendChild(script);
+})();
