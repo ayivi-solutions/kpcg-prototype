@@ -1,0 +1,60 @@
+/* KPCG v19 — keep featured-theme photography clean and move copy below it */
+.v16-theme-feature{
+  display:grid!important;
+  grid-template-rows:auto auto;
+  align-items:stretch!important;
+  min-height:0!important;
+  overflow:hidden;
+  background:#fff!important;
+  color:#17211d!important;
+  border:1px solid #dce4df;
+}
+.v16-theme-feature>img{
+  position:relative!important;
+  inset:auto!important;
+  grid-row:1;
+  width:100%!important;
+  height:clamp(340px,42vw,560px)!important;
+  object-fit:cover!important;
+  opacity:1!important;
+  filter:none!important;
+}
+.v16-theme-feature:after{display:none!important}
+.v16-theme-feature-copy{
+  position:relative!important;
+  z-index:1!important;
+  grid-row:2;
+  max-width:none!important;
+  padding:28px 32px 32px!important;
+  background:#fff!important;
+  color:#17211d!important;
+  border-top:1px solid #dce4df;
+}
+.v16-theme-feature-copy .eyebrow{color:#9c5a3c!important}
+.v16-theme-feature h3{
+  color:#17211d!important;
+  font-size:clamp(1.8rem,3vw,2.65rem)!important;
+  line-height:1.05!important;
+  margin:7px 0 12px!important;
+}
+.v16-theme-feature p{
+  color:#56675f!important;
+  font-size:1rem!important;
+  line-height:1.6!important;
+  max-width:68ch;
+}
+.v16-theme-meta{margin:18px 0 22px!important}
+.v16-theme-meta span{
+  color:#43554c!important;
+  background:#f7f9f7;
+  border:1px solid #d6dfda!important;
+}
+.v16-theme-feature .btn{
+  width:max-content;
+  max-width:100%;
+}
+@media(max-width:620px){
+  .v16-theme-feature>img{height:clamp(280px,68vw,390px)!important}
+  .v16-theme-feature-copy{padding:22px 22px 26px!important}
+  .v16-theme-feature h3{font-size:1.8rem!important}
+}
