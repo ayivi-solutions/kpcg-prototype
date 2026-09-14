@@ -64,8 +64,9 @@ const legacySnapshot=async page=>page.evaluate(()=>{
     stored:localStorage.getItem('kpcg-theme'),
     toggle:{glyph:button?.querySelector('.kpcg-theme-glyph')?.textContent||'',mode:button?.dataset.themeMode||'',pressed:button?.getAttribute('aria-pressed')||'',label:button?.getAttribute('aria-label')||''},
     surfaces:{
-      body:css('body'),header:css('.site-header'),metricStrip:css('.xp-metric-strip'),metric:css('.xp-metric'),
-      mapPanel:css('.map-panel'),mapControl:css('.map-controls button'),bottomNav:css('.bottom-nav'),section:css('.v16-section')
+      body:css('body'),header:css('.site-header'),pulse:css('.v16-pulse'),pulseItem:css('.v16-pulse-item'),
+      mapStory:css('.v16-map-story'),mapPanel:css('.map-panel'),mapControl:css('.map-controls button'),
+      bottomNav:css('.bottom-nav'),section:css('.v16-section'),themeLink:css('.v16-theme-link')
     }
   };
 });
@@ -110,8 +111,9 @@ try{
   summary.checks.persistence=persisted;
   await context.close();
 
-  /* Retained v17 detailed-record experience: specifically cover the surfaces
-     visible in the reported screenshots — metrics, map/control shell and mobile nav. */
+  /* Retained v17 detailed-record experience. These are the exact home-route
+     surfaces visible in the user's screenshots: national pulse, county map,
+     map controls, content section and mobile bottom navigation. */
   const legacyContext=await browser.newContext({viewport:{width:390,height:844},colorScheme:'light'});
   const legacyPage=await legacyContext.newPage();
   legacyPage.on('pageerror',e=>summary.pageErrors.push(`legacy: ${e.message}`));
@@ -119,7 +121,7 @@ try{
   await legacyPage.evaluate(()=>localStorage.setItem('kpcg-theme','light'));
   await legacyPage.reload({waitUntil:'domcontentloaded',timeout:30000});
   await waitTheme(legacyPage,'light');
-  await legacyPage.waitForFunction(()=>Boolean(document.querySelector('.bottom-nav'))&&Boolean(document.querySelector('.xp-metric-strip')),null,{timeout:20000});
+  await legacyPage.waitForFunction(()=>Boolean(document.querySelector('.v16-home'))&&Boolean(document.querySelector('.v16-pulse'))&&Boolean(document.querySelector('.map-panel'))&&Boolean(document.querySelector('.bottom-nav')),null,{timeout:20000});
   const legacyLight=await legacySnapshot(legacyPage);
   summary.checks.legacyDay=legacyLight;
   await legacyPage.screenshot({path:path.join(artifactDir,`${prefix}theme-legacy-day.png`),fullPage:true});
@@ -129,8 +131,8 @@ try{
   const legacyDark=await legacySnapshot(legacyPage);
   const legacyChanged=changedSurfaceCount(legacyLight.surfaces,legacyDark.surfaces);
   const legacyWronglyLight=Object.entries(legacyDark.surfaces).filter(([,value])=>value&&rgbIsVeryLight(value.background)).map(([key])=>key);
-  if(legacyDark.toggle.mode!=='dark'||legacyDark.toggle.glyph!=='☾'||legacyDark.stored!=='dark')throw new Error(`Legacy night-state semantics failed: ${JSON.stringify(legacyDark.toggle)}`);
-  if(legacyChanged<4)throw new Error(`Legacy detailed-record theme remains partial: ${legacyChanged} tracked surfaces changed. ${JSON.stringify({day:legacyLight.surfaces,night:legacyDark.surfaces})}`);
+  if(legacyDark.toggle.mode!=='dark'||legacyDark.toggle.glyph!=='☾'||legacyDark.stored!=='dark'||!/switch to day mode/i.test(legacyDark.toggle.label))throw new Error(`Legacy night-state semantics failed: ${JSON.stringify(legacyDark.toggle)}`);
+  if(legacyChanged<6)throw new Error(`Legacy detailed-record theme remains partial: ${legacyChanged} tracked surfaces changed. ${JSON.stringify({day:legacyLight.surfaces,night:legacyDark.surfaces})}`);
   if(legacyWronglyLight.length)throw new Error(`Legacy night mode still exposes light surfaces: ${legacyWronglyLight.join(', ')}`);
   summary.checks.legacyNight={...legacyDark,changedSurfaceCount:legacyChanged,wronglyLight:legacyWronglyLight};
   await legacyPage.screenshot({path:path.join(artifactDir,`${prefix}theme-legacy-night.png`),fullPage:true});
