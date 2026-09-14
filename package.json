@@ -1,8 +1,8 @@
 {
   "name": "kpcg-prototype",
-  "version": "17.0.0",
+  "version": "18.0.0",
   "private": true,
-  "description": "KPCG public prototype: consolidated source-visible application deployed with Cloudflare Workers Static Assets.",
+  "description": "KPCG v18 public prototype: continuous-scroll public root with preserved v17 detailed-record and CMS fallback, deployed with Cloudflare Workers Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
     "social:generate": "node scripts/generate-social-pages.mjs",
@@ -16,10 +16,6 @@
     "verify": "npm run social:check && npm run acceptance && npm run deploy:dry",
     "verify:strict": "npm run social:check && npm run acceptance:assets && npm run deploy:dry"
   },
-  "devDependencies": {
-    "wrangler": "^4.0.0"
-  },
-  "engines": {
-    "node": ">=22"
-  }
+  "devDependencies": {"wrangler":"^4.0.0"},
+  "engines": {"node":">=22"}
 }
