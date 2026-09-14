@@ -1,0 +1,90 @@
+/* KPCG day/night correction layer v18.2
+   Screenshot-driven overrides for the retained detailed-record homepage.
+   The base theme contract lives in ip-guard.css; this file closes hard-coded
+   light-surface and low-contrast exceptions in the v16 experience. */
+
+html[data-theme="dark"] .v16-pulse {
+  background:#14211d !important;
+  border-color:#2c3e36 !important;
+}
+html[data-theme="dark"] .v16-pulse-item {
+  color:#edf5f1 !important;
+  border-color:#2c3e36 !important;
+}
+html[data-theme="dark"] .v16-pulse-item:hover { background:#193329 !important; }
+html[data-theme="dark"] .v16-pulse-item b { color:#78d6ab !important; }
+html[data-theme="dark"] .v16-pulse-item span { color:#b4c5bd !important; }
+
+html[data-theme="dark"] .v16-section-head h2,
+html[data-theme="dark"] .v16-section h2,
+html[data-theme="dark"] .v16-section h3 { color:#edf5f1 !important; }
+html[data-theme="dark"] .v16-section-head p,
+html[data-theme="dark"] .v16-agenda-item p { color:#a7bab0 !important; }
+html[data-theme="dark"] .v16-section .section-link,
+html[data-theme="dark"] .v16-agenda-item a { color:#78d6ab !important; }
+
+html[data-theme="dark"] .v16-map-story {
+  background:#111b17 !important;
+  border-color:#385047 !important;
+  box-shadow:0 22px 60px rgba(0,0,0,.28) !important;
+}
+html[data-theme="dark"] .v16-map-aside { background:#0b5139 !important; }
+html[data-theme="dark"] .map-panel {
+  background:linear-gradient(180deg,#111c18,#0d1713) !important;
+  border-color:#385047 !important;
+}
+html[data-theme="dark"] .map-controls button {
+  background:#14211d !important;
+  color:#edf5f1 !important;
+  border-color:#486156 !important;
+}
+html[data-theme="dark"] .map-controls button:hover { background:#1d3027 !important; }
+html[data-theme="dark"] .map-legend,
+html[data-theme="dark"] .map-caption {
+  background:rgba(11,18,16,.94) !important;
+  color:#dce8e2 !important;
+  border-color:#385047 !important;
+}
+
+html[data-theme="dark"] .v16-theme-nav { border-color:#33483e !important; }
+html[data-theme="dark"] .v16-theme-link {
+  color:#edf5f1 !important;
+  border-color:#33483e !important;
+}
+html[data-theme="dark"] .v16-theme-link .num { color:#e58f70 !important; }
+html[data-theme="dark"] .v16-theme-link:hover {
+  background:#17372b !important;
+  color:#8ee3bb !important;
+}
+html[data-theme="dark"] .v16-resource-spotlight,
+html[data-theme="dark"] .v16-resource-spotlight .cover {
+  background:#14211d !important;
+  border-color:#2c3e36 !important;
+}
+html[data-theme="dark"] .v16-resource-copy p { color:#a7bab0 !important; }
+html[data-theme="dark"] .v16-agenda,
+html[data-theme="dark"] .v16-agenda-item { border-color:#33483e !important; }
+
+html[data-theme="dark"] .bottom-nav {
+  background:rgba(9,16,13,.98) !important;
+  border-top-color:#2c3e36 !important;
+  box-shadow:0 -10px 28px rgba(0,0,0,.2) !important;
+}
+html[data-theme="dark"] .bottom-nav a,
+html[data-theme="dark"] .bottom-nav button { color:#a7bab0 !important; }
+html[data-theme="dark"] .bottom-nav a.active { color:#78d6ab !important; }
+
+/* Current continuous-scroll root: keep semantic surfaces unmistakably dark. */
+html[data-theme="dark"] #about,
+html[data-theme="dark"] #programmes,
+html[data-theme="dark"] .knowledge,
+html[data-theme="dark"] .events { background:#0b1210 !important; }
+html[data-theme="dark"] .themes { background:#111914 !important; }
+html[data-theme="dark"] .news { background:#0f1814 !important; }
+html[data-theme="dark"] .membership { background:#0d1d17 !important; }
+html[data-theme="dark"] .opportunities { background:#1b170e !important; }
+html[data-theme="dark"] .partner,
+html[data-theme="dark"] .programme,
+html[data-theme="dark"] .resource,
+html[data-theme="dark"] .story,
+html[data-theme="dark"] .engage-form { background:#14211d !important; color:#edf5f1 !important; }
