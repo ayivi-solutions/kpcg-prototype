@@ -166,6 +166,10 @@
     const rail = document.querySelector('.section-rail');
     const links = [...document.querySelectorAll('.section-rail a[href^="#"]')];
     const sections = [...document.querySelectorAll('.scroll-section[id]')];
+    const initialHash = location.hash || '#home';
+    const initialId = initialHash.startsWith('#/') ? initialHash.slice(2) : initialHash.slice(1);
+    let initialTarget = document.getElementById(initialId);
+    const initialGuardUntil = performance.now() + 4000;
 
     const centreRailLink = link => {
       if (!rail || !link) return;
@@ -199,6 +203,22 @@
       if (!sections.length) return;
       const header = document.querySelector('.site-header');
       const headerHeight = header ? header.getBoundingClientRect().height : 0;
+
+      // Preserve a direct/deprecated deep link while the root compatibility
+      // script is still scrolling it into place. Without this guard, the first
+      // scroll event can incorrectly rewrite #about (etc.) back to #home.
+      if (initialTarget && performance.now() < initialGuardUntil) {
+        const initialRect = initialTarget.getBoundingClientRect();
+        if (initialRect.top < 180) {
+          setSectionState(initialTarget);
+          initialTarget = null;
+        } else {
+          return;
+        }
+      } else {
+        initialTarget = null;
+      }
+
       const probe = Math.min(innerHeight - 1, headerHeight + Math.max(28, innerHeight * .24));
       let current = sections.find(section => {
         const rect = section.getBoundingClientRect();
@@ -224,6 +244,7 @@
       const target = document.getElementById(href.slice(1));
       if (!target) return;
 
+      initialTarget = null;
       event.preventDefault();
       const header = document.querySelector('.site-header');
       const offset = header ? Math.round(header.getBoundingClientRect().height) : 0;
@@ -235,8 +256,6 @@
 
     window.addEventListener('scroll', queueSectionSync, { passive: true });
     window.addEventListener('resize', queueSectionSync, { passive: true });
-    // Do not force an initial state here: the root's compatibility layer may
-    // still be handing an old /#/section route to its canonical #section anchor.
   };
 
   const loadEditorialRedesign = () => {
