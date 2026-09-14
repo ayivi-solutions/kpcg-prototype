@@ -48,7 +48,7 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run desktop/mobile, keyboard-map, service-worker and IP-guard QA
+      - name: Run desktop/mobile, keyboard-map, theme, service-worker and IP-guard QA
         shell: bash
         run: |
           set -euo pipefail
@@ -69,6 +69,7 @@ jobs:
             exit 1
           fi
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/browser-smoke.mjs
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/theme-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/sw-cache-smoke.mjs
           KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/ip-hardening-smoke.mjs
 
@@ -135,9 +136,10 @@ jobs:
             exit 1
           fi
 
-      - name: Run production browser, keyboard and IP-protection QA
+      - name: Run production browser, keyboard, theme and IP-protection QA
         run: |
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/browser-smoke.mjs
+          KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/theme-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" node scripts/sw-cache-smoke.mjs
           KPCG_PREVIEW_URL="$KPCG_PRODUCTION_URL" KPCG_PRODUCTION_MODE=1 node scripts/ip-hardening-smoke.mjs
 
