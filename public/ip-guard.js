@@ -155,13 +155,69 @@
   };
 
   /*
-   * The public root is one continuous document. Rail clicks land directly on
-   * the selected section; the page's IntersectionObserver remains authoritative
-   * for hash/active-state updates during normal scrolling immediately after.
+   * The public root is one continuous document. Keep section navigation and
+   * scroll-spy deterministic while ensuring the horizontal rail never causes
+   * a second vertical window scroll when its active item is centred.
    */
   const installContinuousNavigation = () => {
     if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav) return;
     document.body.dataset.kpcgContinuousNav = '1';
+
+    const rail = document.querySelector('.section-rail');
+    const links = [...document.querySelectorAll('.section-rail a[href^="#"]')];
+    const sections = [...document.querySelectorAll('.scroll-section[id]')];
+
+    const centreRailLink = link => {
+      if (!rail || !link) return;
+      const railRect = rail.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      const delta = (linkRect.left + linkRect.width / 2) - (railRect.left + railRect.width / 2);
+      rail.scrollTo({ left: Math.max(0, rail.scrollLeft + delta), behavior: 'smooth' });
+    };
+
+    // The page's built-in IntersectionObserver calls scrollIntoView on the
+    // active rail link. Shadow that method on these links so it scrolls only
+    // the horizontal rail and cannot move the document vertically.
+    links.forEach(link => {
+      link.scrollIntoView = () => centreRailLink(link);
+    });
+
+    const setSectionState = section => {
+      if (!section) return;
+      const href = `#${section.id}`;
+      for (const link of links) {
+        const active = link.getAttribute('href') === href;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+      if (location.hash !== href) history.replaceState(null, '', href);
+      const activeLink = links.find(link => link.getAttribute('href') === href);
+      centreRailLink(activeLink);
+    };
+
+    let syncQueued = false;
+    const syncFromViewport = () => {
+      syncQueued = false;
+      if (!sections.length) return;
+      const header = document.querySelector('.site-header');
+      const headerHeight = header ? header.getBoundingClientRect().height : 0;
+      const probe = Math.min(innerHeight - 1, headerHeight + Math.max(28, innerHeight * .24));
+      let current = sections.find(section => {
+        const rect = section.getBoundingClientRect();
+        return rect.top <= probe && rect.bottom > probe;
+      });
+      if (!current) current = sections.reduce((best, section) => {
+        const distance = Math.abs(section.getBoundingClientRect().top - headerHeight);
+        return !best || distance < best.distance ? { section, distance } : best;
+      }, null)?.section;
+      setSectionState(current);
+    };
+    const queueSectionSync = () => {
+      if (syncQueued) return;
+      syncQueued = true;
+      requestAnimationFrame(syncFromViewport);
+    };
 
     document.addEventListener('click', event => {
       const anchor = event.target?.closest?.('.section-rail a[href^="#"]');
@@ -177,7 +233,12 @@
       const y = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
       history.replaceState(null, '', href);
       window.scrollTo({ top: y, behavior: 'auto' });
+      requestAnimationFrame(queueSectionSync);
     }, true);
+
+    window.addEventListener('scroll', queueSectionSync, { passive: true });
+    window.addEventListener('resize', queueSectionSync, { passive: true });
+    requestAnimationFrame(queueSectionSync);
   };
 
   const loadEditorialRedesign = () => {
