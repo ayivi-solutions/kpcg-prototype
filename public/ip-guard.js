@@ -184,6 +184,43 @@
     document.body.appendChild(el);
   };
 
+  /* ---------------------------------------------------------------------
+     v18 continuous-scroll section navigation
+     Keep the user's selected anchor canonical until the smooth scroll has
+     settled so scroll-spy cannot race the address-bar hash mid-transition.
+     --------------------------------------------------------------------- */
+  const installContinuousNavigation = () => {
+    if (root.dataset.release !== 'v18.0' || !document.body || document.body.dataset.kpcgContinuousNav === '1') return;
+    document.body.dataset.kpcgContinuousNav = '1';
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+    document.addEventListener('click', event => {
+      const anchor = event.target?.closest?.('a[href^="#"]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href') || '';
+      if (!/^#[A-Za-z][A-Za-z0-9_-]*$/.test(href)) return;
+      const target = document.getElementById(href.slice(1));
+      if (!target) return;
+
+      event.preventDefault();
+      const started = performance.now();
+      const settleForMs = reducedMotion ? 120 : 2400;
+      history.replaceState(null, '', href);
+      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+
+      const settle = now => {
+        if (location.hash !== href) history.replaceState(null, '', href);
+        const header = document.getElementById('siteHeader');
+        const desiredTop = header ? Math.round(header.getBoundingClientRect().height) : 0;
+        const actualTop = Math.round(target.getBoundingClientRect().top);
+        const settled = Math.abs(actualTop - desiredTop) <= 24;
+        if (!settled && now - started < settleForMs) requestAnimationFrame(settle);
+        else history.replaceState(null, '', href);
+      };
+      requestAnimationFrame(settle);
+    }, false);
+  };
+
   const loadEditorialRedesign = () => {
     // The editorial compatibility layer belongs only to the retained detailed
     // application. The new continuous public page has its own native layout.
@@ -206,17 +243,15 @@
     observer.observe(target, { childList: true, subtree: true });
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      addWatermark();
-      installThemeObserver();
-      loadEditorialRedesign();
-    }, { once: true });
-  } else {
+  const bootGuard = () => {
     addWatermark();
     installThemeObserver();
+    installContinuousNavigation();
     loadEditorialRedesign();
-  }
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootGuard, { once: true });
+  else bootGuard();
 
   window.addEventListener('hashchange', queueThemeMount);
   window.addEventListener('pageshow', queueThemeMount);
