@@ -5,22 +5,57 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify-climate-intelligence:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.20.0
+      - name: Install project tooling
+        run: npm install --no-audit --no-fund
       - name: Verify climate-intelligence contracts
-        run: node scripts/climate-intelligence-smoke.mjs
+        run: npm run climate:verify
       - name: Prepare and verify ADM0-ADM3 geography
         run: npm run admin:prepare
-      - name: Exercise administrative map hierarchy
+      - name: Install browser QA tooling
         run: |
-          npm install --no-save playwright
-          npx playwright install chromium --with-deps
-          npm run test:admin-map
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Exercise climate intelligence and administrative hierarchy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          npx --yes wrangler@4.131.1 dev --local --port 8787 > artifacts/wrangler-climate-intelligence.log 2>&1 &
+          WRANGLER_PID=$!
+          trap 'kill "$WRANGLER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8787/data/climate/indicator-registry.json >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/wrangler-climate-intelligence.log
+            exit 1
+          fi
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 npm run test:admin-map
+          KPCG_PREVIEW_URL=http://127.0.0.1:8787 node scripts/climate-intelligence-browser.mjs
+      - name: Upload climate intelligence evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpcg-climate-intelligence-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
