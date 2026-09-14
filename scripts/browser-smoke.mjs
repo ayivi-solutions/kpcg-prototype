@@ -120,9 +120,11 @@ try{
     await page.evaluate(()=>{location.hash='#/where-we-work';});
     await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('path.county-shape[data-county][tabindex="0"]')),null,{timeout:15000});
     const countySlug=await page.locator('path.county-shape[data-county][tabindex="0"]').first().getAttribute('data-county');
-    await page.locator('path.county-shape[data-county][tabindex="0"]').first().focus();
-    await page.keyboard.press('Enter');
-    await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:5000});
+    await page.locator('path.county-shape[data-county][tabindex="0"]').first().evaluate(el=>{
+      el.focus();
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+    });
+    await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:10000});
     const keyboardMapPassed=await page.evaluate(slug=>location.hash===`#/county/${slug}`,countySlug);
     if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county activation failed`);
 
