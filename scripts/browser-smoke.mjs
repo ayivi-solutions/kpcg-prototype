@@ -12,10 +12,10 @@ const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||proces
 const productionMode=process.env.KPCG_PRODUCTION_MODE==='1';
 const outputPath=path.join(artifactDir,productionMode?'production-smoke-summary.json':'browser-smoke-summary.json');
 const expectedRelease='v17.0';
-const expectedSW='kpcg-v17.0-motion-20260914';
+const expectedSW='kpcg-v17.0-theme-20260914';
 const firstHero='/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg';
 const profiles=[{name:'desktop',viewport:{width:1440,height:900}},{name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}];
-const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$))/;
+const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$)|ip-guard\.(?:css|js)(?:\?|$)|editorial-redesign-v3\.js(?:\?|$))/;
 
 fs.mkdirSync(artifactDir,{recursive:true});
 const browser=await chromium.launch({headless:true});
@@ -41,7 +41,9 @@ const verifySource=async context=>{
   if(heroResponse.status()!==200||heroBytes<40000)throw new Error(`first hero unavailable or too small: ${heroResponse.status()} / ${heroBytes}`);
   const motionResponses=await Promise.all(['css','js'].map(ext=>context.request.get(`${baseURL}/motion-system.${ext}?qa=${Date.now()}`)));
   if(motionResponses.some(item=>item.status()!==200))throw new Error('site-wide motion assets unavailable');
-  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,motionAssets:motionResponses.map(item=>item.status()),firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
+  const themeResponses=await Promise.all(['css','js'].map(ext=>context.request.get(`${baseURL}/ip-guard.${ext}?qa=${Date.now()}`)));
+  if(themeResponses.some(item=>item.status()!==200))throw new Error('site-wide theme/guard assets unavailable');
+  return {rootStatus:response.status(),sourceVisibleContent:true,release:expectedRelease,serviceWorkerRelease:expectedSW,motionAssets:motionResponses.map(item=>item.status()),themeAssets:themeResponses.map(item=>item.status()),firstHero:{path:firstHero,status:heroResponse.status(),bytes:heroBytes}};
 };
 
 const verifyBrowserCancelledAssets=async(context,failedRequests)=>{
@@ -95,10 +97,12 @@ try{
       motionItems:document.querySelectorAll('.motion-item').length,
       visibleMotionItems:document.querySelectorAll('.motion-visible').length,
       motionProgress:Boolean(document.querySelector('.motion-progress')),
+      theme:document.documentElement.dataset.theme||null,
+      themeToggle:Boolean(document.querySelector('.kpcg-theme-toggle')),
       release:document.documentElement.dataset.release||null
     }));
     if(home.release!==expectedRelease)throw new Error(`${profile.name}: DOM release ${home.release}`);
-    if(!home.identity||home.heroSlides<12||home.heroDots!==home.heroSlides||home.activeSlides!==1||home.motionItems<20||!home.motionProgress)throw new Error(`${profile.name}: hero/identity/motion contract failed ${JSON.stringify(home)}`);
+    if(!home.identity||home.heroSlides<12||home.heroDots!==home.heroSlides||home.activeSlides!==1||home.motionItems<20||!home.motionProgress||!home.themeToggle)throw new Error(`${profile.name}: hero/identity/motion/theme contract failed ${JSON.stringify(home)}`);
 
     const targetIndex=Math.min(4,home.heroSlides-1);
     await page.click(`[data-v16-slide="${targetIndex}"]`);
@@ -129,8 +133,14 @@ try{
     const manifestResponse=await context.request.get(`${baseURL}/manifest.webmanifest`);
     const manifest=await manifestResponse.json();
     if(manifestResponse.status()!==200||manifest.start_url!=='/#/home')throw new Error(`${profile.name}: manifest invalid`);
-    const sw=await page.evaluate(async()=>{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('SW timeout')),15000))]);return {scope:reg.scope,active:reg.active?.scriptURL||null};});
-    if(!sw.active?.endsWith('/sw.js'))throw new Error(`${profile.name}: service worker not active`);
+    const sw=await page.evaluate(async()=>{
+      if(!('serviceWorker' in navigator))throw new Error('Service worker API unavailable');
+      let reg=await navigator.serviceWorker.getRegistration('/');
+      if(!reg)reg=await navigator.serviceWorker.register('/sw.js');
+      const ready=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('SW timeout')),30000))]);
+      return {scope:ready.scope,active:ready.active?.scriptURL||null,state:ready.active?.state||null};
+    });
+    if(!sw.active?.endsWith('/sw.js')||sw.state!=='activated')throw new Error(`${profile.name}: service worker not active ${JSON.stringify(sw)}`);
     await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>Boolean(document.querySelector('[data-v16-hero]')),null,{timeout:15000});
     await page.reload({waitUntil:'domcontentloaded',timeout:30000});
@@ -146,4 +156,4 @@ try{
 
 const summary={release:expectedRelease,mode:productionMode?'production':'preview',commitSha,baseURL,generatedAt:new Date().toISOString(),releaseEvidence,desktopPassed:results.some(x=>x.profile==='desktop'&&x.passed),mobilePassed:results.some(x=>x.profile==='mobile'&&x.passed),keyboardMapPassed:results.filter(x=>x.profile).every(x=>x.keyboardMapPassed),passed:!failed&&results.every(x=>x.passed),results};
 fs.writeFileSync(outputPath,JSON.stringify(summary,null,2)+'\n');
-if(!summary.passed){console.error(`KPCG ${expectedRelease} browser smoke failed; see ${path.relative(root,outputPath)}`);process.exitCode=1}else console.log(`PASS KPCG ${expectedRelease} browser smoke: desktop + mobile + 15-slide hero + keyboard county map.`);
+if(!summary.passed){console.error(`KPCG ${expectedRelease} browser smoke failed; see ${path.relative(root,outputPath)}`);process.exitCode=1}else console.log(`PASS KPCG ${expectedRelease} browser smoke: desktop + mobile + 15-slide hero + keyboard county map + theme toggle.`);
