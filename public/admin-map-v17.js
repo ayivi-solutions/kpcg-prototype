@@ -1,7 +1,8 @@
 (() => {
   'use strict';
   const VERSION='17.2-adm3';
-  const EXPERIENCE='19.0.0';
+  const EXPERIENCE='19.0.1';
+  const CLIMATE='20.0.0';
   const slugs=new Map();
   const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const shapeName=shape=>{
@@ -29,8 +30,18 @@
     script.onerror=()=>console.warn('[KPCG UX] experience layer failed to load');
     document.head.appendChild(script);
   };
+  const loadClimate=()=>{
+    if(document.querySelector('script[data-kpcg-climate-intelligence]'))return;
+    const script=document.createElement('script');
+    script.src=`/climate-intelligence-v20.js?v=${CLIMATE}`;
+    script.defer=true;
+    script.dataset.kpcgClimateIntelligence=CLIMATE;
+    script.onerror=()=>console.warn('[KPCG CI] climate intelligence layer failed to load');
+    document.head.appendChild(script);
+  };
   const install=()=>{
     loadExperience();
+    loadClimate();
     capture();
     annotate();
     const observer=new MutationObserver(records=>{
