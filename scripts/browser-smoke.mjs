@@ -12,7 +12,7 @@ const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||proces
 const productionMode=process.env.KPCG_PRODUCTION_MODE==='1';
 const outputPath=path.join(artifactDir,productionMode?'production-smoke-summary.json':'browser-smoke-summary.json');
 const expectedRelease='v18.0';
-const expectedSW='kpcg-v18.0-continuous-20260914';
+const expectedSW='kpcg-v18.2-theme-20260914';
 const firstHero='/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg';
 const sectionIds=['home','about','where-we-work','themes','programmes','policy','knowledge','news','events','multimedia','membership','opportunities','engage'];
 const profiles=[{name:'desktop',viewport:{width:1440,height:900}},{name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}];
@@ -36,7 +36,7 @@ const verifySource=async context=>{
   if(legacy.status()!==200||!legacySource.includes('data-release="v17.0"')||!legacySource.includes('data-prerendered-home'))throw new Error('preserved v17 fallback is unavailable or invalid');
   const swResponse=await context.request.get(`${baseURL}/sw.js?qa=${Date.now()}`);
   const swText=await swResponse.text();
-  if(swResponse.status()!==200||!swText.includes(expectedSW))throw new Error('live service worker release mismatch');
+  if(swResponse.status()!==200||!swText.includes(`const RELEASE='${expectedSW}'`))throw new Error('live service worker release mismatch');
   const heroResponse=await context.request.get(`${baseURL}${firstHero}?qa=${Date.now()}`);
   const heroBytes=(await heroResponse.body()).length;
   if(heroResponse.status()!==200||heroBytes<40000)throw new Error(`first hero unavailable or too small: ${heroResponse.status()} / ${heroBytes}`);
