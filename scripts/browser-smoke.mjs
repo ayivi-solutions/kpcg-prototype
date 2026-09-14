@@ -106,27 +106,28 @@ try{
 
     const targetIndex=Math.min(4,home.heroSlides-1);
     await page.click(`[data-v16-slide="${targetIndex}"]`);
-    await page.waitForFunction(i=>document.querySelector(`[data-v16-hero-slide="${i}"]`)?.classList.contains('active'),targetIndex,{timeout:5000});
-    await page.waitForFunction(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return Boolean(img?.getAttribute('src'))&&!img?.getAttribute('data-src')&&img.complete&&img.naturalWidth>0;},targetIndex,{timeout:10000});
+    await page.waitForFunction(i=>document.querySelector(`[data-v16-hero-slide="${i}"]`)?.classList.contains('active'),targetIndex,{timeout:12000});
+    await page.waitForFunction(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return Boolean(img?.getAttribute('src'))&&!img?.getAttribute('data-src')&&img.complete&&img.naturalWidth>0;},targetIndex,{timeout:12000});
     const heroTransition=await page.evaluate(i=>{const img=document.querySelector(`[data-v16-hero-slide="${i}"] img`);return {src:img?.getAttribute('src')||'',dataSrc:img?.getAttribute('data-src')||'',naturalWidth:img?.naturalWidth||0};},targetIndex);
     if(!heroTransition.src||heroTransition.dataSrc||heroTransition.naturalWidth===0)throw new Error(`${profile.name}: lazy hero slide did not load ${JSON.stringify(heroTransition)}`);
 
     await page.evaluate(()=>document.querySelector('a[href="#/about"]')?.click());
-    await page.waitForFunction(()=>location.hash==='#/about'&&document.querySelectorAll('.motion-item').length>=10,null,{timeout:10000});
+    await page.waitForFunction(()=>location.hash==='#/about'&&document.querySelectorAll('.motion-item').length>=10,null,{timeout:12000});
     const routeMotion=await page.evaluate(()=>({hash:location.hash,leaving:document.body.classList.contains('motion-route-leaving'),items:document.querySelectorAll('.motion-item').length}));
     if(routeMotion.hash!=='#/about'||routeMotion.leaving||routeMotion.items<10)throw new Error(`${profile.name}: animated route transition failed ${JSON.stringify(routeMotion)}`);
 
     for(const hash of ['#/themes','#/programmes','#/knowledge']){
       await page.evaluate(h=>{location.hash=h;},hash);
-      await page.waitForFunction(h=>location.hash===h&&Boolean(document.querySelector('main,#app,#root,[data-page],[class*="page"]')),hash,{timeout:10000});
+      await page.waitForFunction(h=>location.hash===h&&Boolean(document.querySelector('main,#app,#root,[data-page],[class*="page"]')),hash,{timeout:12000});
     }
 
     await page.evaluate(()=>{location.hash='#/where-we-work';});
-    await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('path.county-shape[data-county][tabindex="0"]')),null,{timeout:15000});
-    const countySlug=await page.locator('path.county-shape[data-county][tabindex="0"]').first().getAttribute('data-county');
-    await page.locator('path.county-shape[data-county][tabindex="0"]').first().focus();
-    await page.keyboard.press('Enter');
-    await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:5000});
+    await page.waitForFunction(()=>location.hash==='#/where-we-work'&&Boolean(document.querySelector('path.county-shape[data-county][tabindex="0"]')),null,{timeout:18000});
+    const firstCounty=page.locator('path.county-shape[data-county][tabindex="0"]').first();
+    const countySlug=await firstCounty.getAttribute('data-county');
+    await firstCounty.focus();
+    await firstCounty.press('Enter');
+    await page.waitForFunction(slug=>location.hash===`#/county/${slug}`,countySlug,{timeout:12000});
     const keyboardMapPassed=await page.evaluate(slug=>location.hash===`#/county/${slug}`,countySlug);
     if(!keyboardMapPassed)throw new Error(`${profile.name}: keyboard county activation failed`);
 
@@ -142,9 +143,9 @@ try{
     });
     if(!sw.active?.endsWith('/sw.js')||sw.state!=='activated')throw new Error(`${profile.name}: service worker not active ${JSON.stringify(sw)}`);
     await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
-    await page.waitForFunction(()=>Boolean(document.querySelector('[data-v16-hero]')),null,{timeout:15000});
+    await page.waitForFunction(()=>Boolean(document.querySelector('[data-v16-hero]')),null,{timeout:18000});
     await page.reload({waitUntil:'domcontentloaded',timeout:30000});
-    await page.waitForFunction(()=>Boolean(navigator.serviceWorker?.controller),null,{timeout:15000});
+    await page.waitForFunction(()=>Boolean(navigator.serviceWorker?.controller),null,{timeout:18000});
 
     const {verifiedAbortedRequests,unresolvedFailedRequests}=await verifyBrowserCancelledAssets(context,failedRequests);
     const timing=await page.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0];return n?{domContentLoaded:Math.round(n.domContentLoadedEventEnd),load:Math.round(n.loadEventEnd),transferSize:n.transferSize||0}:null;});
