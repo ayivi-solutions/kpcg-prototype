@@ -2,6 +2,7 @@
   'use strict';
   const VERSION='17.2-adm3';
   const EXPERIENCE='19.0.0';
+  const PRESENTATION='19.1.0';
   const slugs=new Map();
   const norm=value=>String(value??'').toLowerCase().normalize('NFKD').replace(/[\u2018\u2019']/g,'').replace(/\bcity\b|\bcounty\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const shapeName=shape=>{
@@ -29,8 +30,18 @@
     script.onerror=()=>console.warn('[KPCG UX] experience layer failed to load');
     document.head.appendChild(script);
   };
+  const loadPresentation=()=>{
+    if(document.querySelector('script[data-kpcg-map-presentation]'))return;
+    const script=document.createElement('script');
+    script.src=`/map-presentation-v19.js?v=${PRESENTATION}`;
+    script.defer=true;
+    script.dataset.kpcgMapPresentation=PRESENTATION;
+    script.onerror=()=>console.warn('[KPCG ADM] map presentation layer failed to load');
+    document.head.appendChild(script);
+  };
   const install=()=>{
     loadExperience();
+    loadPresentation();
     capture();
     annotate();
     const observer=new MutationObserver(records=>{
