@@ -16,6 +16,16 @@
   root.dataset.ayiviIpGuard = VERSION;
   root.dataset.themeContract = 'v18.2';
 
+  const ensureThemeCorrectionStylesheet = () => {
+    if (document.head.querySelector('link[data-kpcg-theme-v18-2]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/theme-v18-2.css?v=18.2-20260914';
+    link.dataset.kpcgThemeV18_2 = '1';
+    document.head.appendChild(link);
+  };
+  ensureThemeCorrectionStylesheet();
+
   /* ---------------------------------------------------------------------
      KPCG day / night mode
      - first visit follows the operating-system preference
