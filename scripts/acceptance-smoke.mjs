@@ -12,7 +12,7 @@ const strictAssets=process.argv.includes('--strict-assets');
 const emitArtifacts=process.argv.includes('--emit-artifacts');
 const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||process.env.GITHUB_SHA||'unknown';
 const release='v17.0';
-const serviceWorkerRelease='kpcg-v17.0-motion-20260914';
+const serviceWorkerRelease='kpcg-v17.1-rollback-20260914';
 const qualityFloorBytes=40000;
 const fail=message=>{throw new Error(message)};
 const html=fs.readFileSync(htmlPath,'utf8');

@@ -8,7 +8,7 @@ const __dirname=path.dirname(__filename);
 const root=path.resolve(__dirname,'..');
 const artifactDir=path.join(root,'artifacts');
 const baseURL=(process.env.KPCG_PREVIEW_URL||'http://127.0.0.1:8787').replace(/\/$/,'');
-const expectedCache='kpcg-kpcg-v17.0-motion-20260914';
+const expectedCache='kpcg-kpcg-v17.1-rollback-20260914';
 const outputPath=path.join(artifactDir,'service-worker-cache-summary.json');
 fs.mkdirSync(artifactDir,{recursive:true});
 
@@ -20,7 +20,7 @@ try{
   const response=await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
   if(!response||response.status()!==200)throw new Error(`root returned ${response?.status()??'no response'}`);
   await page.waitForFunction(()=>document.documentElement.dataset.release==='v17.0'&&Boolean(document.querySelector('nav,[role="navigation"]')),null,{timeout:30000});
-  const registration=await page.evaluate(async()=>{const ready=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker ready timeout')),15000))]);return {scope:ready.scope,activeScript:ready.active?.scriptURL||null};});
+  const registration=await page.evaluate(async()=>{let reg=await navigator.serviceWorker.getRegistration('/');if(!reg)reg=await navigator.serviceWorker.register('/sw.js');const ready=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker ready timeout')),30000))]);return {scope:ready.scope,activeScript:ready.active?.scriptURL||null};});
   await page.reload({waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForFunction(()=>Boolean(navigator.serviceWorker?.controller),null,{timeout:15000});
   const cacheKeys=await page.evaluate(()=>caches.keys());

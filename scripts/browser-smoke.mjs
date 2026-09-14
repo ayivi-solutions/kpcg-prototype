@@ -12,7 +12,7 @@ const commitSha=process.env.KPCG_COMMIT_SHA||process.env.GITHUB_HEAD_SHA||proces
 const productionMode=process.env.KPCG_PRODUCTION_MODE==='1';
 const outputPath=path.join(artifactDir,productionMode?'production-smoke-summary.json':'browser-smoke-summary.json');
 const expectedRelease='v17.0';
-const expectedSW='kpcg-v17.0-motion-20260914';
+const expectedSW='kpcg-v17.1-rollback-20260914';
 const firstHero='/assets/kpcg_images_v1/470222578_552600794423862_3455318813895875629_n.jpg';
 const profiles=[{name:'desktop',viewport:{width:1440,height:900}},{name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}];
 const releaseCritical=/\/(?:assets\/|manifest\.webmanifest(?:\?|$)|sw\.js(?:\?|$)|motion-system\.(?:css|js)(?:\?|$))/;
@@ -129,7 +129,7 @@ try{
     const manifestResponse=await context.request.get(`${baseURL}/manifest.webmanifest`);
     const manifest=await manifestResponse.json();
     if(manifestResponse.status()!==200||manifest.start_url!=='/#/home')throw new Error(`${profile.name}: manifest invalid`);
-    const sw=await page.evaluate(async()=>{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('SW timeout')),15000))]);return {scope:reg.scope,active:reg.active?.scriptURL||null};});
+    const sw=await page.evaluate(async()=>{let reg=await navigator.serviceWorker.getRegistration('/');if(!reg)reg=await navigator.serviceWorker.register('/sw.js');const ready=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('SW timeout')),30000))]);return {scope:ready.scope,active:ready.active?.scriptURL||null};});
     if(!sw.active?.endsWith('/sw.js'))throw new Error(`${profile.name}: service worker not active`);
     await page.goto(`${baseURL}/#/home`,{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>Boolean(document.querySelector('[data-v16-hero]')),null,{timeout:15000});

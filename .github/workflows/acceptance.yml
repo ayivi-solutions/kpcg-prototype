@@ -124,7 +124,7 @@ jobs:
               && grep -q 'data-prerendered-home' <<<"$source" \
               && grep -q 'Climate governance that connects people, evidence and action.' <<<"$source" \
               && grep -q '/ip-guard.js?v=17.1' <<<"$source" \
-              && grep -q 'kpcg-v17.0-20260913' <<<"$sw"; then
+              && grep -q 'kpcg-v17.1-rollback-20260914' <<<"$sw"; then
               ready=1
               break
             fi
