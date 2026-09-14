@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'v18.1-theme-20260914';
+  const VERSION = 'v18.2-theme-20260914';
   const ALLOWED_HOSTS = new Set(['kpcg.ayivisolutions.com', 'localhost', '127.0.0.1']);
   const host = String(location.hostname || '').toLowerCase();
   const authorized = ALLOWED_HOSTS.has(host);
@@ -14,13 +14,15 @@
   window.__AYIVI_IP_GUARD__ = Object.freeze({ version: VERSION, authorized, host });
   root.classList.add('ayivi-ip-protected');
   root.dataset.ayiviIpGuard = VERSION;
+  root.dataset.themeContract = 'v18.2';
 
   /* ---------------------------------------------------------------------
      KPCG day / night mode
      - first visit follows the operating-system preference
      - explicit light/dark choice persists across sessions and tabs
-     - accessible header toggle is re-mounted after SPA route re-renders
-     - browser/PWA chrome colour follows the resolved theme
+     - the visible glyph represents the CURRENT state: sun=day, moon=night
+     - accessible labels describe the ACTION that clicking will perform
+     - the header control is re-mounted after route/DOM re-renders
      --------------------------------------------------------------------- */
   const THEME_KEY = 'kpcg-theme';
   const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -46,7 +48,8 @@
     if (meta && meta.getAttribute('content') !== value) meta.setAttribute('content', value);
   };
 
-  const themeGlyph = theme => theme === 'dark' ? '☀︎' : '☾';
+  // IMPORTANT: glyph communicates CURRENT mode, not the destination action.
+  const themeGlyph = theme => theme === 'dark' ? '☾' : '☀︎';
 
   const syncThemeToggle = button => {
     if (!button) return;
@@ -54,7 +57,8 @@
     const dark = theme === 'dark';
     const pressed = dark ? 'true' : 'false';
     const label = dark ? 'Switch to day mode' : 'Switch to night mode';
-    const title = dark ? 'Day mode' : 'Night mode';
+    const title = dark ? 'Night mode — switch to day mode' : 'Day mode — switch to night mode';
+    button.dataset.themeMode = theme;
     if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
     if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
     if (button.getAttribute('title') !== title) button.setAttribute('title', title);
@@ -96,7 +100,8 @@
       button.innerHTML = '<span class="kpcg-theme-glyph" aria-hidden="true"></span>';
       button.addEventListener('click', toggleTheme);
       const search = actions.querySelector('[data-open-search]');
-      actions.insertBefore(button, search || actions.firstChild);
+      const menu = actions.querySelector('#menuToggle,[data-menu-toggle]');
+      actions.insertBefore(button, search || menu || actions.firstChild);
     }
     syncThemeToggle(button);
   };
@@ -180,6 +185,9 @@
   };
 
   const loadEditorialRedesign = () => {
+    // The editorial compatibility layer belongs only to the retained detailed
+    // application. The new continuous public page has its own native layout.
+    if (!document.querySelector('#app')) return;
     if (document.querySelector('script[data-kpcg-editorial-loader]')) return;
     const script = document.createElement('script');
     script.src = '/editorial-redesign-v3.js?v=18.0-20260913';
