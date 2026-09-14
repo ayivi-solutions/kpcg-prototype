@@ -27,6 +27,20 @@ try{
       navigator.serviceWorker.ready,
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('service worker ready timeout')),30000))
     ]);
+    const active=ready.active;
+    if(active&&active.state!=='activated'){
+      await Promise.race([
+        new Promise((resolve,reject)=>{
+          const onState=()=>{
+            if(active.state==='activated'){active.removeEventListener('statechange',onState);resolve();}
+            else if(active.state==='redundant'){active.removeEventListener('statechange',onState);reject(new Error('service worker became redundant during activation'));}
+          };
+          active.addEventListener('statechange',onState);
+          onState();
+        }),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error(`service worker activation timeout; state=${active?.state||'none'}`)),15000))
+      ]);
+    }
     return {scope:ready.scope,activeScript:ready.active?.scriptURL||null,state:ready.active?.state||null};
   });
   if(!registration.activeScript?.endsWith('/sw.js')||registration.state!=='activated')throw new Error(`service worker is not activated: ${JSON.stringify(registration)}`);
