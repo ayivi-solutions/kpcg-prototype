@@ -1,4 +1,4 @@
-const RELEASE='kpcg-v18.0-continuous-20260914';
+const RELEASE='kpcg-v18.2-theme-20260914';
 const CACHE=`kpcg-${RELEASE}`;
 const APP_SHELL=[
   '/',
@@ -31,7 +31,7 @@ async function precache(){
 }
 self.addEventListener('install',event=>event.waitUntil(precache()));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
-const networkFirst=async request=>{const cache=await caches.open(CACHE);try{const response=await fetch(request);if(response&&response.ok)await cache.put(request,response.clone());return response;}catch(error){const cached=await cache.match(request,{ignoreSearch:true});if(cached)return cached;throw error;}};
+const networkFirst=async request=>{const cache=await caches.open(CACHE);try{const response=await fetch(request,{cache:'no-store'});if(response&&response.ok)await cache.put(request,response.clone());return response;}catch(error){const cached=await cache.match(request,{ignoreSearch:true});if(cached)return cached;throw error;}};
 self.addEventListener('fetch',event=>{
   const request=event.request;if(request.method!=='GET')return;const url=new URL(request.url);if(url.origin!==self.location.origin)return;
   if(request.mode==='navigate'){event.respondWith(networkFirst(request).catch(async()=>{const cache=await caches.open(CACHE);return (await cache.match('/'))||Response.error();}));return;}
