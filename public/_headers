@@ -31,7 +31,13 @@
 /content-enrichment-v21.css
   Cache-Control: no-store, max-age=0
 
+/media-randomizer-v22.js
+  Cache-Control: no-store, max-age=0
+
 /data/image-manifest.json
+  Cache-Control: no-store, max-age=0
+
+/data/image-pool.json
   Cache-Control: no-store, max-age=0
 
 /experience-v19.js
