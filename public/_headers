@@ -18,3 +18,9 @@
 
 /ip-guard.css
   Cache-Control: no-store, max-age=0
+
+/motion-system.js
+  Cache-Control: no-store, max-age=0
+
+/thematic-content.js
+  Cache-Control: no-store, max-age=0
