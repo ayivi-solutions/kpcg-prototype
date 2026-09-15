@@ -24,3 +24,18 @@
 
 /thematic-content.js
   Cache-Control: no-store, max-age=0
+
+/content-enrichment-v21.js
+  Cache-Control: no-store, max-age=0
+
+/content-enrichment-v21.css
+  Cache-Control: no-store, max-age=0
+
+/data/image-manifest.json
+  Cache-Control: no-store, max-age=0
+
+/experience-v19.js
+  Cache-Control: no-store, max-age=0
+
+/experience-v19.css
+  Cache-Control: no-store, max-age=0
