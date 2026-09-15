@@ -3,7 +3,9 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const ASSETS = path.join(ROOT, 'public', 'assets');
-const OUT = path.join(ROOT, 'public', 'data', 'image-manifest.json');
+const OUT_DIR = path.join(ROOT, 'public', 'data');
+const CONTEXT_MANIFEST = path.join(OUT_DIR, 'image-manifest.json');
+const RANDOM_POOL = path.join(OUT_DIR, 'image-pool.json');
 const IMAGE_RE = /\.(?:avif|gif|jpe?g|png|webp)$/i;
 const QUALITY_FLOOR_BYTES = 40000;
 
@@ -33,6 +35,13 @@ for (const file of files) {
 }
 const images = [...new Set(qualified.map(file => '/' + path.relative(path.join(ROOT, 'public'), file).split(path.sep).join('/')))].sort();
 
-await mkdir(path.dirname(OUT), { recursive: true });
-await writeFile(OUT, JSON.stringify({ schemaVersion: 1, qualityFloorBytes: QUALITY_FLOOR_BYTES, count: images.length, images }, null, 2) + '\n');
-console.log(`Generated ${path.relative(ROOT, OUT)} with ${images.length} quality-qualified KPCG images from ${imageFolders.length} source folders.`);
+await mkdir(OUT_DIR, { recursive: true });
+await writeFile(CONTEXT_MANIFEST, JSON.stringify({
+  schemaVersion: 2,
+  qualityFloorBytes: QUALITY_FLOOR_BYTES,
+  count: images.length,
+  images: [],
+  note: 'The context layer does not eagerly replace images. Random slideshow media is supplied by image-pool.json.'
+}, null, 2) + '\n');
+await writeFile(RANDOM_POOL, JSON.stringify({ schemaVersion: 2, qualityFloorBytes: QUALITY_FLOOR_BYTES, count: images.length, images }, null, 2) + '\n');
+console.log(`Generated KPCG random image pool with ${images.length} quality-qualified images from ${imageFolders.length} source folders.`);
