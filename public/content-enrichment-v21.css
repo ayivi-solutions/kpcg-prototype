@@ -1,0 +1,61 @@
+/* KPCG content and media enrichment v21 */
+.x19-dock{display:none!important}
+
+.kpcg-context-v21,
+.kpcg-county-context-v21{padding:clamp(58px,7vw,94px) 0;background:#fffdf8;border-top:1px solid #d8ded8;border-bottom:1px solid #d8ded8}
+.kpcg-context-v21:nth-of-type(even){background:#f6f2e9}
+.kpcg-context-heading{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(30px,6vw,78px);align-items:start;margin-bottom:38px}
+.kpcg-context-heading h2,.kpcg-county-context-v21 h2{font-size:clamp(2rem,4.3vw,4rem);line-height:1;letter-spacing:-.045em;margin:.2em 0 0;max-width:14ch;color:#10241d}
+.kpcg-context-intro p{font-size:clamp(1rem,1.45vw,1.13rem);line-height:1.72;color:#40514a;margin:0 0 1em}
+.kpcg-source-note{font-size:.78rem!important;color:#6a756f!important;border-left:3px solid #c4861a;padding-left:13px;margin-top:20px!important}
+.kpcg-context-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #cfd8d2;border-left:1px solid #cfd8d2;background:#fff}
+.kpcg-context-grid article{min-height:250px;padding:24px;border-right:1px solid #cfd8d2;border-bottom:1px solid #cfd8d2;display:flex;flex-direction:column}
+.kpcg-context-grid article>span{font-size:.75rem;color:#a84a2a;font-weight:850;letter-spacing:.08em}
+.kpcg-context-grid h3{font-size:1.12rem;line-height:1.18;margin:auto 0 10px;color:#10241d}
+.kpcg-context-grid p{font-size:.91rem;line-height:1.56;color:#52615a;margin:0}
+.kpcg-context-connect{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);gap:32px;margin-top:34px;padding-top:24px;border-top:1px solid #cfd8d2;align-items:start}
+.kpcg-context-connect strong{font-size:1.3rem;letter-spacing:-.02em}
+.kpcg-context-connect nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid #cfd8d2}
+.kpcg-context-connect a{display:grid;grid-template-columns:1fr auto;gap:16px;padding:15px 0;border-bottom:1px solid #cfd8d2;color:#0b5139;font-weight:800;text-decoration:none}
+.kpcg-context-connect a:nth-child(odd){padding-right:20px}
+.kpcg-context-connect a:nth-child(even){padding-left:20px;border-left:1px solid #cfd8d2}
+.kpcg-context-connect a:hover{color:#063726;background:#eef4f0}
+
+.kpcg-random-media{display:grid;grid-template-columns:1.1fr repeat(3,1fr);gap:8px;margin-top:42px;background:#082f24;padding:8px;color:#fff;min-height:250px}
+.kpcg-random-media-copy{padding:26px;display:flex;flex-direction:column;justify-content:flex-end}
+.kpcg-random-media-copy .eyebrow{color:#e3bf73}
+.kpcg-random-media-copy h3{font-size:1.55rem;line-height:1.08;margin:8px 0 10px;letter-spacing:-.025em}
+.kpcg-random-media-copy p{font-size:.84rem;line-height:1.55;color:#cbd9d2;margin:0}
+.kpcg-random-media figure{margin:0;min-height:240px;overflow:hidden;background:#174737}
+.kpcg-random-media img{width:100%;height:100%;object-fit:cover;transition:transform .8s ease,opacity .3s ease}
+.kpcg-random-media figure:hover img{transform:scale(1.035)}
+
+.kpcg-county-context-v21{background:#eef4f0}
+.kpcg-county-context-v21 p{max-width:80ch;color:#40514a;font-size:1.02rem;line-height:1.7}
+.kpcg-county-path{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px;padding:18px 0;border-top:1px solid #c8d4cd;border-bottom:1px solid #c8d4cd}
+.kpcg-county-path span{font-weight:800;color:#0b5139}
+.kpcg-county-path b{color:#c4861a}
+
+@media(max-width:900px){
+  .x19-dock{display:none!important}
+  .bottom-nav{z-index:1000!important}
+  body{padding-bottom:max(76px,env(safe-area-inset-bottom))}
+  .kpcg-context-heading{grid-template-columns:1fr;gap:22px}
+  .kpcg-context-heading h2,.kpcg-county-context-v21 h2{max-width:18ch}
+  .kpcg-context-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpcg-context-connect{grid-template-columns:1fr}
+  .kpcg-random-media{grid-template-columns:1fr 1fr;min-height:0}
+  .kpcg-random-media-copy{grid-column:1/-1;padding:22px}
+  .kpcg-random-media figure{min-height:210px}
+  .kpcg-random-media figure:last-child{display:none}
+}
+@media(max-width:620px){
+  .kpcg-context-v21,.kpcg-county-context-v21{padding:52px 0}
+  .kpcg-context-grid{grid-template-columns:1fr}
+  .kpcg-context-grid article{min-height:185px;padding:20px}
+  .kpcg-context-connect nav{grid-template-columns:1fr}
+  .kpcg-context-connect a,.kpcg-context-connect a:nth-child(odd),.kpcg-context-connect a:nth-child(even){padding:14px 0;border-left:0}
+  .kpcg-random-media{grid-template-columns:1fr}
+  .kpcg-random-media figure{min-height:230px}
+  .kpcg-random-media figure:nth-of-type(n+3){display:none}
+}
