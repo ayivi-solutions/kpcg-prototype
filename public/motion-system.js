@@ -160,3 +160,13 @@
   script.dataset.kpcgThematicContent='20.0.0';
   document.head.appendChild(script);
 })();
+
+// Cross-page context and randomized KPCG media extension.
+(() => {
+  if(document.querySelector('script[data-kpcg-content-enrichment]'))return;
+  const script=document.createElement('script');
+  script.src='/content-enrichment-v21.js?v=21.0.0';
+  script.defer=true;
+  script.dataset.kpcgContentEnrichment='21.0.0';
+  document.head.appendChild(script);
+})();
