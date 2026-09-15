@@ -161,12 +161,22 @@
   document.head.appendChild(script);
 })();
 
-// Cross-page context and randomized KPCG media extension.
+// Cross-page KPCG context enrichment.
 (() => {
   if(document.querySelector('script[data-kpcg-content-enrichment]'))return;
   const script=document.createElement('script');
   script.src='/content-enrichment-v21.js?v=21.0.0';
   script.defer=true;
   script.dataset.kpcgContentEnrichment='21.0.0';
+  document.head.appendChild(script);
+})();
+
+// Lazy-safe randomized use of the full quality-qualified KPCG image archive.
+(() => {
+  if(document.querySelector('script[data-kpcg-media-randomizer]'))return;
+  const script=document.createElement('script');
+  script.src='/media-randomizer-v22.js?v=22.0.0';
+  script.defer=true;
+  script.dataset.kpcgMediaRandomizer='22.0.0';
   document.head.appendChild(script);
 })();
