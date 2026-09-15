@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const V='19.0.1';
+  const V='19.0.2';
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -15,17 +15,11 @@
   function button(label,text,handler){
     const b=document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.textContent=text;if(handler)b.addEventListener('click',handler);return b;
   }
-  function anchor(href,label,text,cls=''){
-    const a=document.createElement('a');a.href=href;a.setAttribute('aria-label',label);a.textContent=text;if(cls)a.className=cls;return a;
-  }
   function chrome(){
     if(!$('.x19-section-nav')){const n=document.createElement('nav');n.className='x19-section-nav';n.hidden=true;n.setAttribute('aria-label','On this page');document.body.append(n)}
-    if($('.x19-dock'))return;
-    const d=document.createElement('nav');d.className='x19-dock';d.setAttribute('aria-label','KPCG quick actions');
-    d.append(anchor('#/where-we-work','Explore Kenya map','⌖','x19-primary'),anchor('#/search','Search KPCG','⌕'));
-    const focus=button('Toggle focus mode','◐',e=>{const on=document.body.classList.toggle('x19-focus');e.currentTarget.setAttribute('aria-pressed',String(on));localStorage.setItem('kpcg-x19-focus',on?'1':'0')});focus.dataset.x19Focus='';focus.setAttribute('aria-pressed','false');
-    const top=button('Back to top','↑',()=>scrollTo({top:0,behavior:reduced.matches?'auto':'smooth'}));top.dataset.x19Top='';d.append(focus,top);document.body.append(d);
-    if(localStorage.getItem('kpcg-x19-focus')==='1'){document.body.classList.add('x19-focus');focus.setAttribute('aria-pressed','true')}
+    $$('.x19-dock').forEach(node=>node.remove());
+    document.body.classList.remove('x19-focus');
+    localStorage.removeItem('kpcg-x19-focus');
   }
   function routeState(){
     document.documentElement.classList.add('x19-ready');document.body.classList.add('x19-experience');document.documentElement.dataset.x19Route=route();
@@ -73,8 +67,9 @@
     if(r==='multimedia'){const x=$('.media-grid')||$('.page-shell .grid.three');if(x)x.dataset.x19Mode='reel'}
     if(r==='home')$$('.v16-agenda,.article-stream,.resource-list').forEach((x,i)=>{if(x.children.length>4&&i<2)rail(x,i===0)});
   }
-  function apply(){routeState();chrome();physics();enhance();mapGuide();sectionNav()}
-  function schedule(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;apply()})}
-  function start(){css();chrome();apply();new MutationObserver(schedule).observe($('#app')||document.body,{subtree:true,childList:true});addEventListener('hashchange',()=>setTimeout(apply,0));addEventListener('resize',()=>{clearTimeout(window.__x19Resize);window.__x19Resize=setTimeout(sectionNav,160)},{passive:true});window.KPCGExperience=Object.freeze({version:V,refresh:apply})}
+  function refresh(){chrome();physics();enhance();mapGuide();sectionNav()}
+  function apply(){routeState();refresh()}
+  function schedule(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;refresh()})}
+  function start(){css();chrome();apply();new MutationObserver(schedule).observe($('#app')||document.body,{subtree:true,childList:true});addEventListener('hashchange',()=>setTimeout(apply,0));addEventListener('resize',()=>{clearTimeout(window.__x19Resize);window.__x19Resize=setTimeout(sectionNav,160)},{passive:true});window.KPCGExperience=Object.freeze({version:V,refresh})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
