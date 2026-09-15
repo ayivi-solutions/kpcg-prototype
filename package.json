@@ -5,9 +5,10 @@
   "description": "KPCG public prototype: consolidated source-visible application deployed with Cloudflare Workers Static Assets.",
   "scripts": {
     "dev": "wrangler dev",
+    "media:manifest": "node scripts/generate-image-manifest.mjs",
     "admin:sync": "node scripts/sync-admin-boundaries.mjs",
     "admin:verify": "node scripts/verify-admin-boundaries.mjs",
-    "admin:prepare": "npm run admin:sync && npm run admin:verify",
+    "admin:prepare": "npm run media:manifest && npm run admin:sync && npm run admin:verify",
     "test:admin-map": "node scripts/admin-map-smoke.mjs",
     "predev": "npm run admin:prepare",
     "social:generate": "node scripts/generate-social-pages.mjs",
