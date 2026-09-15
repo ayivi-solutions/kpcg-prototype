@@ -50,9 +50,10 @@
 
   function prepareCards(root){
     root.querySelectorAll(cardSelector).forEach(card=>{
-      if(card.classList.contains('motion-card'))return;
+      if(card.dataset.motionCardReady)return;
+      card.dataset.motionCardReady='1';
       card.classList.add('motion-card');
-      if(!matchMedia('(hover:hover) and (pointer:fine)').matches||reduced.matches)return;
+      if(reduced.matches||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
       card.addEventListener('pointermove',event=>{
         const box=card.getBoundingClientRect();
         const x=(event.clientX-box.left)/box.width-.5;
@@ -131,7 +132,9 @@
     prepare(document);
     mutation.observe(document.body,{childList:true,subtree:true});
     updateScrollEffects();
-    routeEnter();
+    // Do not animate the first paint of the application shell. Route transitions
+    // remain animated after navigation, but the LCP hero can render immediately.
+    document.body.classList.remove('motion-route-leaving','motion-route-entering');
   }
 
   reduced.addEventListener('change',()=>{buildObserver();prepare(document);updateScrollEffects()});
