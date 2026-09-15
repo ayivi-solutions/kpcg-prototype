@@ -149,3 +149,14 @@
   script.dataset.kpcgAdminMap='17.2-adm3';
   document.head.appendChild(script);
 })();
+
+// Thematic editorial content extension. Kept separate from the consolidated SPA
+// so each climate-governance lens can carry substantive Kenya-specific context.
+(() => {
+  if(document.querySelector('script[data-kpcg-thematic-content]'))return;
+  const script=document.createElement('script');
+  script.src='/thematic-content.js?v=20.0.0';
+  script.defer=true;
+  script.dataset.kpcgThematicContent='20.0.0';
+  document.head.appendChild(script);
+})();
