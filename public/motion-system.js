@@ -2,7 +2,7 @@
   'use strict';
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const itemSelector=[
-    '.page-shell > .container > *','.xp-section > .container > *','.section > .container > *',
+    '.page-shell > .container > *','.xp-section > .container > *:not(.theme-explorer)','.section > .container > *',
     '.section-head','.xp-section-head','.v16-section-head','.page-title','.xp-title','.ed-title','.section-title',
     '.lede','.grid > *','.portfolio-rail > *','.article-stream > *','.resource-list > *',
     '.policy-stream > *','.v16-pulse-item','.v16-brief','.v16-theme-link','.v16-story',
