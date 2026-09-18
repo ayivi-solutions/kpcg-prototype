@@ -67,7 +67,7 @@
     observer.observe(document.body,{subtree:true,childList:true});
     if(document.querySelector('script[data-kpcg-admin-core]'))return;
     const core=document.createElement('script');
-    core.src='/admin-map-core-v17.js?v=19.0.0';
+    core.src='/admin-map-core-v17.js?v=19.0.1';
     core.defer=true;
     core.dataset.kpcgAdminCore=VERSION;
     core.addEventListener('load',()=>requestAnimationFrame(()=>annotate()));
